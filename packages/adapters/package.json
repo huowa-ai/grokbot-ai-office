@@ -20,5 +20,8 @@
   },
   "dependencies": {
     "@grokbot-ai-office/core": "workspace:*"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.0.0"
   }
 }

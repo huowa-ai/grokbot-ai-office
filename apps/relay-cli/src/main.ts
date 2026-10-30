@@ -1,5 +1,11 @@
 import { createAdapter } from '@grokbot-ai-office/adapters';
-import { RelayError, noopEventSink, relay } from '@grokbot-ai-office/core';
+import {
+  RelayError,
+  readOutputChunkChars,
+  readPromptPreviewChars,
+  relay,
+} from '@grokbot-ai-office/core';
+import { createJsonlEventSink, resolveEventsPath } from '@grokbot-ai-office/events';
 import {
   ProvidersConfigError,
   type ProvidersFile,
@@ -10,11 +16,14 @@ import {
   resolveProvidersPath,
 } from '@grokbot-ai-office/registry';
 
+import { runApproval, runHandoff, runHook, runServe, usageText } from './commands.js';
+
 export interface RunIo {
   stdin?: NodeJS.ReadableStream;
   isTTY?: boolean;
   stdout?: (text: string) => void;
   stderr?: (text: string) => void;
+  signal?: AbortSignal;
 }
 
 export async function run(
@@ -26,14 +35,26 @@ export async function run(
   const stderr = io.stderr ?? writeStderr;
   const stdout = io.stdout ?? writeStdout;
   const [rawName, ...promptParts] = argv;
-  if (!rawName) {
-    stderr('用法：ai-relay <名字> <提示>。省略提示时从标准输入读取。');
-    return 1;
+  if (!rawName || rawName === '--help' || rawName === 'help') {
+    stderr(usageText());
+    return rawName ? 0 : 1;
+  }
+  if (rawName === 'serve') {
+    return runServe(promptParts, env, io);
+  }
+  if (rawName === 'handoff') {
+    return runHandoff(promptParts, cwd, env, io);
+  }
+  if (rawName === 'approval') {
+    return runApproval(promptParts, env, io);
+  }
+  if (rawName === 'hook') {
+    return runHook(promptParts, env, io);
   }
 
   const prompt = await resolvePrompt(promptParts, io);
   if (prompt === undefined) {
-    stderr('用法：ai-relay <名字> <提示>。省略提示时从标准输入读取。');
+    stderr(usageText());
     return 1;
   }
 
@@ -84,7 +105,9 @@ export async function run(
         },
         requestedHost,
         host: host ?? '',
-        events: noopEventSink,
+        events: createJsonlEventSink(resolveEventsPath(env)),
+        promptPreviewChars: readPromptPreviewChars(env),
+        outputChunkChars: readOutputChunkChars(env),
         resolveAdapter: (name) => {
           const provider = config.providers[name];
           if (!provider) {

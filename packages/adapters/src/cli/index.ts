@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access, rm, writeFile } from 'node:fs/promises';
@@ -8,6 +7,7 @@ import { type AdapterPort, RelayError, redactSecrets } from '@grokbot-ai-office/
 
 import type { AdapterRuntime, CliInput, SubscriptionConfig } from '../types.js';
 import { ensureWorkspace, resolveWorkspace } from '../workspace.js';
+import { runSubscriptionProcess } from './pty.js';
 
 const STDERR_LIMIT = 2_000;
 
@@ -56,14 +56,26 @@ export function createCliAdapter(
         if (signal.aborted) {
           throw new RelayError('TIMEOUT', '命令已中止');
         }
-        const result = await runChild(bin, args, {
-          cwd: workspace,
-          env,
-          signal,
-          stdinText: input === 'stdin' ? request.prompt : undefined,
-        });
+        const result = await runSubscriptionProcess(
+          bin,
+          args,
+          {
+            cwd: workspace,
+            env,
+            signal,
+            stdinText: input === 'stdin' ? request.prompt : undefined,
+            onChunk: request.onOutputChunk,
+            killTree: runtime.killTree,
+          },
+          runtime,
+          providerName,
+          config.pty === true,
+        );
         if (signal.aborted || result.abort) {
           throw new RelayError('TIMEOUT', '命令已中止', { cause: result.error });
+        }
+        if (result.error instanceof RelayError) {
+          throw result.error;
         }
         if (result.errorCode === 'ENOENT') {
           throw new RelayError('CLI_NOT_INSTALLED', `未找到命令 ${bin}`, { cause: result.error });
@@ -157,122 +169,6 @@ async function prepareCommand(
   return { args: [...rest] };
 }
 
-interface ChildResult {
-  stdout: string;
-  stderr: string;
-  exitCode: number | null;
-  error?: Error;
-  errorCode?: string;
-  abort: boolean;
-}
-
-function runChild(
-  bin: string,
-  args: string[],
-  options: {
-    cwd: string;
-    env: NodeJS.ProcessEnv;
-    signal: AbortSignal;
-    stdinText?: string;
-  },
-): Promise<ChildResult> {
-  return new Promise((resolve) => {
-    const stdoutChunks: Buffer[] = [];
-    const stderrChunks: Buffer[] = [];
-    let settled = false;
-    const finish = (result: ChildResult): void => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      resolve(result);
-    };
-
-    let child: ReturnType<typeof spawn>;
-    try {
-      child = spawn(bin, args, {
-        cwd: options.cwd,
-        env: options.env,
-        signal: options.signal,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        windowsHide: true,
-      });
-    } catch (error) {
-      const normalized = error instanceof Error ? error : new Error('命令启动失败');
-      finish({
-        stdout: '',
-        stderr: '',
-        exitCode: null,
-        error: normalized,
-        errorCode: readErrorCode(error),
-        abort: options.signal.aborted || isAbortError(error),
-      });
-      return;
-    }
-
-    child.stdout?.on('data', (chunk: Buffer | string) => {
-      stdoutChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    });
-    child.stderr?.on('data', (chunk: Buffer | string) => {
-      stderrChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    });
-    child.stdin?.on('error', (error: Error) => {
-      if (options.signal.aborted || isAbortError(error)) {
-        finish(snapshot(stdoutChunks, stderrChunks, null, error, true));
-        return;
-      }
-      // 子进程提前退出时，stdin 上的 EPIPE 不能覆盖真正的退出码。
-      if (readErrorCode(error) !== 'EPIPE') {
-        finish(snapshot(stdoutChunks, stderrChunks, null, error, false));
-      }
-    });
-
-    if (options.stdinText !== undefined) {
-      child.stdin?.end(options.stdinText);
-    } else {
-      child.stdin?.end();
-    }
-
-    child.on('error', (error: Error) => {
-      finish(
-        snapshot(
-          stdoutChunks,
-          stderrChunks,
-          null,
-          error,
-          options.signal.aborted || isAbortError(error),
-        ),
-      );
-    });
-
-    child.on('close', (exitCode, killSignal) => {
-      const aborted = options.signal.aborted;
-      const signalError =
-        !aborted && exitCode === null && killSignal
-          ? new Error(`命令被信号 ${killSignal} 终止`)
-          : undefined;
-      finish(snapshot(stdoutChunks, stderrChunks, exitCode, signalError, aborted));
-    });
-  });
-}
-
-function snapshot(
-  stdoutChunks: Buffer[],
-  stderrChunks: Buffer[],
-  exitCode: number | null,
-  error: Error | undefined,
-  abort: boolean,
-): ChildResult {
-  return {
-    stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-    stderr: Buffer.concat(stderrChunks).toString('utf8'),
-    exitCode,
-    error,
-    errorCode: readErrorCode(error),
-    abort,
-  };
-}
-
 async function commandExists(bin: string, env: NodeJS.ProcessEnv): Promise<boolean> {
   if (bin.includes('/') || bin.includes('\\')) {
     return canExecute(bin);
@@ -319,21 +215,6 @@ function applyOutputFilter(output: string, pattern: string | undefined): string 
     return !expression.test(line);
   });
   return kept.join('\n');
-}
-
-function readErrorCode(error: unknown): string | undefined {
-  if (typeof error === 'object' && error !== null && 'code' in error) {
-    const code = error.code;
-    return typeof code === 'string' ? code : undefined;
-  }
-  return undefined;
-}
-
-function isAbortError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  return error.name === 'AbortError' || readErrorCode(error) === 'ABORT_ERR';
 }
 
 function workspaceRoot(runtime: AdapterRuntime, env: NodeJS.ProcessEnv): string {

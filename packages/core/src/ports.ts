@@ -1,10 +1,12 @@
 import type { RelayError } from './errors.js';
+import type { RelayEvent } from './schema.js';
 
 export interface RelayRequest {
   provider: string;
   prompt: string;
   replyTo?: string;
   timeoutMs?: number;
+  onOutputChunk?: (chunk: string) => void | Promise<void>;
 }
 
 export interface RelayResult {
@@ -20,24 +22,8 @@ export interface AdapterPort {
   selfcheck(): Promise<{ ok: boolean; detail: string }>;
 }
 
-export type RelayEventType = 'started' | 'replying_to' | 'done' | 'error';
-
-export interface RelayEvent {
-  v: 1;
-  id: string;
-  ts: string;
-  provider: string;
-  host: string;
-  type: RelayEventType;
-  requestId: string;
-  replyTo?: string;
-  durationMs?: number;
-  error?: {
-    code: string;
-    message: string;
-  };
-}
-
 export interface EventSink {
   emit(event: RelayEvent): Promise<void>;
 }
+
+export type { RelayEvent, RelayEventType } from './schema.js';

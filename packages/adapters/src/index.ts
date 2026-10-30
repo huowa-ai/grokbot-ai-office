@@ -33,5 +33,6 @@ export type {
   AdapterRuntime,
   ApiKeyConfig,
   OpenAiCompatibleConfig,
+  PtySpawn,
   SubscriptionConfig,
 } from './types.js';

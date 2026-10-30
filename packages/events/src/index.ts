@@ -1,25 +1,14 @@
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-export const EVENT_TYPES = ['started', 'replying_to', 'done', 'error'] as const;
+export { EVENT_TYPES, relayEventSchema } from '@grokbot-ai-office/core';
+export type {
+  RelayEvent,
+  RelayEvent as StatusEvent,
+  RelayEventType,
+} from '@grokbot-ai-office/core';
 
-export type StatusEventType = (typeof EVENT_TYPES)[number];
-
-export interface StatusEvent {
-  v: 1;
-  id: string;
-  ts: string;
-  provider: string;
-  host: string;
-  type: StatusEventType;
-  requestId: string;
-  replyTo?: string;
-  durationMs?: number;
-  error?: {
-    code: string;
-    message: string;
-  };
-}
+export { createJsonlEventSink, readEvents } from './jsonl.js';
 
 export function defaultEventsPath(homeDirectory = os.homedir()): string {
   return path.join(homeDirectory, '.grokbot-ai-office', 'events.jsonl');

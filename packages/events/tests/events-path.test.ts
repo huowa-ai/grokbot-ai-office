@@ -15,7 +15,14 @@ describe('resolveEventsPath', () => {
     );
   });
 
-  it('EVENT_TYPES 只有架构规定的四种', () => {
-    expect([...EVENT_TYPES]).toEqual(['started', 'replying_to', 'done', 'error']);
+  it('EVENT_TYPES 覆盖 v1 的六种事件', () => {
+    expect([...EVENT_TYPES]).toEqual([
+      'started',
+      'replying_to',
+      'done',
+      'error',
+      'output_chunk',
+      'status',
+    ]);
   });
 });

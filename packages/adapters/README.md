@@ -39,6 +39,8 @@ console.log(resolveWorkspace(process.env));
 3. 调用前会创建 `shared/`、`agents/<provider>/`、`outbox/`。
 4. `output_filter` 是正则。匹配到的行会从标准输出里去掉。
 5. 找不到命令返回 `CLI_NOT_INSTALLED`。退出码非 0 返回 `CLI_EXIT_NONZERO`，`cause` 是脱敏后的 stderr 前 2000 个字符。没有输出返回 `EMPTY_RESPONSE`。中止返回 `TIMEOUT`。
+6. 标准输出会通过 `onOutputChunk` 分段送出。最终返回值仍是过滤后的完整输出。
+7. `pty: true` 时用 `node-pty` 保留颜色和光标。加载失败会打日志并退回管道。超时、中止或退出时结束整个进程组。
 
 ## 官方 API 与 OpenAI 兼容
 
@@ -55,5 +57,7 @@ console.log(resolveWorkspace(process.env));
 | `gemini` | `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` | `gemini-2.5-flash` | `GEMINI_API_KEY` |
 
 Anthropic 使用 `x-api-key` 和 `anthropic-version: 2023-06-01`，请求体包含 `model`、`max_tokens`（4096）和 `messages`。Gemini 把密钥放在 `x-goog-api-key` 头里，不放进 URL。回答分别从 content 块和 `candidates[0].content.parts` 读取。
+
+HTTP 适配器拿到完整回答后，会把它作为一次 `onOutputChunk` 交给调用方，再原样返回。
 
 `selfcheck()` 只检查命令是否存在、变量是否已设置，以及对端点发一个不带密钥的 GET。单元测试不访问真实模型。

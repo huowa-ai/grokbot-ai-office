@@ -74,6 +74,23 @@ describe('providersFileSchema', () => {
     expect(config.providers.codex?.hosts).toEqual(['mac', 'cloud']);
   });
 
+  it('subscription 可以声明 pty', () => {
+    const config = parseProvidersConfig({
+      ...validFile,
+      providers: {
+        codex: {
+          auth: 'subscription',
+          command: ['codex', 'exec', '--sandbox', 'read-only'],
+          safe_mode: '--sandbox read-only',
+          pty: true,
+        },
+      },
+    });
+    expect(
+      config.providers.codex?.auth === 'subscription' ? config.providers.codex.pty : false,
+    ).toBe(true);
+  });
+
   it('hosts 含有非法主机名时校验失败', () => {
     const error = capture(() =>
       parseProvidersConfig({

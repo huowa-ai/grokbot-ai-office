@@ -1,46 +1,19 @@
 # @grokbot-ai-office/core
 
-中转核心。定义端口和错误，执行 `relay()`。本包不调用 CLI，也不发 HTTP 请求。
+中转核心。定义端口、事件 schema 和错误，执行 `relay()`。本包不调用 CLI，也不发 HTTP 请求。
 
 ## 公开 API
 
-- `relay(request, dependencies)`：按注入的注册表和适配器完成一次调用。
-- `RelayError`：带 `code`、`message`、`cause`、`isOperational`。
-- `ERROR_CODES`：架构第 8 节规定的 9 个错误码。
+- `relay(request, dependencies)`：按注入的注册表和适配器完成一次调用，并写出 `started`、`status`、`output_chunk`、`done` 或 `error`。
+- `relayEventSchema`：事件的 zod schema，`v` 固定为 `1`。
+- `handoff`、`requestApproval`、`resolveApproval`、`listApprovals`：交接文件和批准事项。
+- `planHook`：把 CLI 钩子映射成状态事件。钩子优先于输出启发式。
+- `reduceEvents`：把事件折成每个 `provider@host` 的当前快照，包含最近 8KB 终端尾部。
+- `RelayError` 和 `ERROR_CODES`。
 - `redactSecrets(text)`：把疑似密钥替换成 `[REDACTED]`。
-- `noopEventSink`：空的事件槽。调用点会执行，但不会写 JSONL。
+- `noopEventSink`：空的事件槽。应用层应注入 JSONL 实现。
 - `AdapterPort`、`EventSink`、`RelayRequest`、`RelayResult`。
 
-`relay()` 的依赖由应用层注入：
+`RelayRequest.onOutputChunk` 用来接收适配器推来的输出。最终回答仍是 `call()` 的返回值。
 
-1. `hasProvider`：注册表里有没有这个名字。没有则返回 `PROVIDER_NOT_FOUND`。
-2. `requestedHost`：名字写成 `provider@host` 时的主机。与当前 `host` 不一致则返回 `CONFIG_INVALID`。
-3. `isAvailableOnHost`：配置里的 `hosts` 是否允许当前主机。不允许则返回 `CONFIG_INVALID`。
-4. `resolveAdapter`：按提供者配置创建适配器。
-5. `events`：事件槽。不传时使用 `noopEventSink`。完整的 JSONL 写入留在下一步。
-
-超时用 `AbortController`。成功时原样返回适配器文本。空文本返回 `EMPTY_RESPONSE`。可预期错误放在 `RelayResult.error` 里，不编造回答。
-
-## 示例
-
-```ts
-import { noopEventSink, relay } from '@grokbot-ai-office/core';
-
-const result = await relay(
-  { provider: 'codex', prompt: '你好', timeoutMs: 30_000 },
-  {
-    hasProvider: (name) => name === 'codex',
-    host: 'mac',
-    events: noopEventSink,
-    resolveAdapter: () => ({
-      kind: 'cli',
-      async call() {
-        return '原文';
-      },
-      async selfcheck() {
-        return { ok: true, detail: 'ok' };
-      },
-    }),
-  },
-);
-```
+提示预览默认 80 个字符，上限 500，由 `promptPreviewChars` 或 `RELAY_PROMPT_PREVIEW_CHARS` 控制。输出分段默认不超过 1024 字符，同时不超过 1024 字节。

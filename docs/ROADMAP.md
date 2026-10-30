@@ -1,0 +1,46 @@
+# 路线图
+
+本文是已经定下来的计划。当前实现到第 3 步。第 3.5 步之后都还没做。
+
+## 第一步 骨架（完成）
+
+仓库结构、设计规范、注册表校验和错误码。
+
+## 第二步 中转核心与接入适配器（完成）
+
+`ai-relay` 能按 `configs/providers.yaml` 调用 AI。三种接入都已接通：
+
+- `subscription`：本地 CLI
+- `api_key`：DeepSeek、Kimi、GLM、Claude（Anthropic）、Gemini
+- `openai_compatible`：OpenAI 兼容接口，包括本地 Ollama
+
+## 第三步 实时事件（本阶段）
+
+事件写入 `~/.grokbot-ai-office/events.jsonl`，也可用 `RELAY_EVENTS_PATH` 改路径。`ai-relay serve` 把新事件推到本机 WebSocket，并用 `GET /state` 给后加入的客户端一份快照。
+
+这一步还包含两件从 MIT 项目 [munder-difflin](https://github.com/HarnessMD/munder-difflin) 学来、但按我们自己的端口重新实现的能力：
+
+1. **伪终端**。`subscription` 可设 `pty: true`。原始终端输出（颜色、光标）进入 `output_chunk`，并保留最近 8KB，供第 4 步的 xterm.js 重放。`node-pty` 加载失败时退回管道。超时、中止或退出时结束整个进程组。
+2. **CLI 钩子**。`ai-relay hook` 和 `POST /hook` 接收 Claude Code 等 CLI 的钩子，把提交提示、调用工具、请求权限、停止映射成 `working`、`waiting_approval`、`idle`。钩子状态优先于输出启发式。配置见 [HOOKS.md](./HOOKS.md)。
+
+交接和批准也在这一步：`ai-relay handoff`、`ai-relay approval request|resolve|list`。还没有界面。
+
+## 第 3.5 步 ai-relay 作为 MCP 服务器
+
+把中转做成 MCP 服务器，提供工具 `ask`、`list_agents`、`office_status`。在 Grok Bot 里作为自定义链接应用接入。中转 bot 改为调用这个 MCP，而不再拼接 Shell 命令。
+
+## 第四步 3D 办公室第一版
+
+用 three.js 做真 3D，低多边形卡通风，默认正交等距视角。本地区和云端区在同一层楼。每台显示器嵌一个实时的 xterm.js 终端（CSS3DRenderer）。状态有动画：卡住变红、等批准举手、长期空闲睡觉、新 AI 接入时装修工位。交接时拿着文件走过去。
+
+## 第五步 老板视角
+
+同一场景切到第一人称透视镜头，用 WASD 和鼠标走动。走近可以看清屏幕，也可以跟随一次交接。点老板电脑进入控制台，里面有状态总表、批准事项、交接记录和派活输入框。控制台使用本地口令，并且只监听 localhost。
+
+## 第 5.5 步 macOS 原生 SwiftUI 灵动岛
+
+屏幕顶部一条胶囊。每个 AI 一个状态点。悬停展开，可以一键批准或拒绝，能看到交接动画。点击后打开 3D 办公室里对应的工位。这一步要在 Mac 上用 Xcode 编译。
+
+## 第六步 分发
+
+发布 npm 包。用法是 `npx grokbot-ai-office init | mcp | office | ask`。同时导出 Grok Bot 模板。每个用户在自己的电脑上用自己的 AI 账号和 key 运行，不做托管 SaaS。npm 发布前需要先决定仓库是否公开。

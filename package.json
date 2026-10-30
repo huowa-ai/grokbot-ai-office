@@ -23,7 +23,8 @@
     "typecheck": "turbo run typecheck",
     "test": "vitest run",
     "selfcheck": "node scripts/selfcheck.mjs",
-    "relay": "node apps/relay-cli/dist/cli.js"
+    "relay": "node apps/relay-cli/dist/cli.js",
+    "serve": "node apps/relay-cli/dist/cli.js serve"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

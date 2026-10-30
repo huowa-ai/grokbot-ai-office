@@ -9,6 +9,7 @@ providers:
     command: ["codex", "exec", "--sandbox", "read-only", "--skip-git-repo-check", "-"]
     input: stdin
     safe_mode: "--sandbox read-only"
+    # pty: true   # 可选。需要本机能加载 node-pty；失败时自动回到管道。
 
   codebuddy:
     auth: subscription

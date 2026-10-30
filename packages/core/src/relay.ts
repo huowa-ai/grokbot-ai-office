@@ -1,7 +1,21 @@
 import { randomUUID } from 'node:crypto';
 
 import { RelayError } from './errors.js';
-import type { AdapterPort, EventSink, RelayEvent, RelayRequest, RelayResult } from './ports.js';
+import { detectWaitingApproval } from './heuristic.js';
+import type { AdapterPort, EventSink, RelayRequest, RelayResult } from './ports.js';
+import { redactSecrets } from './redact.js';
+import {
+  type RelayEvent,
+  type StatusSource,
+  appendTail,
+  clampText,
+  createEvent,
+  formatInstance,
+  previewText,
+  readOutputChunkChars,
+  readPromptPreviewChars,
+  splitOutput,
+} from './schema.js';
 
 const DEFAULT_TIMEOUT_MS = 180_000;
 
@@ -21,7 +35,10 @@ export interface RelayDependencies {
   events?: EventSink;
   host?: string;
   createRequestId?: () => string;
+  createEventId?: () => string;
   now?: () => number;
+  promptPreviewChars?: number;
+  outputChunkChars?: number;
 }
 
 export const noopEventSink: EventSink = {
@@ -65,35 +82,48 @@ export async function relay(
 
   const requestId = dependencies.createRequestId?.() ?? `r_${randomUUID()}`;
   const sink = dependencies.events ?? noopEventSink;
+  const previewLimit = dependencies.promptPreviewChars ?? readPromptPreviewChars();
+  const chunkLimit = dependencies.outputChunkChars ?? readOutputChunkChars();
+  const promptPreview = previewText(request.prompt, previewLimit);
+  const instance = formatInstance(request.provider, currentHost);
+  let seq = 0;
+  let tail = '';
+  let heuristicSent = false;
 
-  const publish = async (
-    type: RelayEvent['type'],
-    extra?: Pick<RelayEvent, 'replyTo' | 'durationMs' | 'error'>,
-  ): Promise<void> => {
-    const event: RelayEvent = {
-      v: 1,
-      id: randomUUID(),
-      ts: new Date(now()).toISOString(),
-      provider: request.provider,
-      host: currentHost,
-      type,
-      requestId,
-    };
-    if (extra?.replyTo !== undefined) {
-      event.replyTo = extra.replyTo;
-    }
-    if (extra?.durationMs !== undefined) {
-      event.durationMs = extra.durationMs;
-    }
-    if (extra?.error !== undefined) {
-      event.error = extra.error;
-    }
-    await sink.emit(event);
+  const publish = async (event: RelayEvent): Promise<void> => {
+    await sink.emit(createEvent(event));
   };
 
-  await publish('started');
+  const base = {
+    provider: request.provider,
+    host: currentHost,
+    instance,
+    taskId: requestId,
+  };
+
+  await publish(
+    stamp(base, now, dependencies.createEventId, {
+      type: 'started',
+      payload: promptPreview === undefined ? {} : { promptPreview },
+    }),
+  );
+  await publish(
+    stamp(base, now, dependencies.createEventId, {
+      type: 'status',
+      payload: {
+        state: 'working',
+        source: 'lifecycle',
+        ...(promptPreview === undefined ? {} : { taskPreview: promptPreview }),
+      },
+    }),
+  );
   if (request.replyTo !== undefined) {
-    await publish('replying_to', { replyTo: request.replyTo });
+    await publish(
+      stamp(base, now, dependencies.createEventId, {
+        type: 'replying_to',
+        payload: { replyTo: clampText(redactSecrets(request.replyTo), 200) },
+      }),
+    );
   }
 
   if (!dependencies.resolveAdapter) {
@@ -120,8 +150,45 @@ export async function relay(
     // 超时与适配器谁先结束都可能留下另一个拒绝，这里避免未处理的拒绝。
   });
 
+  const streamingRequest: RelayRequest = {
+    ...request,
+    onOutputChunk: async (chunk) => {
+      const redacted = redactSecrets(chunk);
+      tail = appendTail(tail, redacted);
+      for (const piece of splitOutput(redacted, chunkLimit)) {
+        seq += 1;
+        await publish(
+          stamp(base, now, dependencies.createEventId, {
+            type: 'output_chunk',
+            payload: { seq, text: piece },
+          }),
+        );
+      }
+      if (!heuristicSent) {
+        const hint = detectWaitingApproval(redacted);
+        if (hint !== undefined) {
+          heuristicSent = true;
+          await publish(
+            stamp(base, now, dependencies.createEventId, {
+              type: 'status',
+              payload: {
+                state: 'waiting_approval',
+                source: 'heuristic' satisfies StatusSource,
+                approvalId: `heur_${requestId}`.slice(0, 200),
+                summary: clampText(redactSecrets(hint), 200),
+              },
+            }),
+          );
+        }
+      }
+      if (request.onOutputChunk) {
+        await request.onOutputChunk(chunk);
+      }
+    },
+  };
+
   try {
-    const callPromise = adapter.call(request, controller.signal);
+    const callPromise = adapter.call(streamingRequest, controller.signal);
     void callPromise.catch(() => {
       // 同上：超时胜出时，适配器稍后的拒绝不能变成未处理拒绝。
     });
@@ -129,14 +196,22 @@ export async function relay(
     const durationMs = elapsed(startedAt, now);
     if (text.trim().length === 0) {
       const error = new RelayError('EMPTY_RESPONSE', '适配器返回了空响应');
-      await publish('error', {
-        durationMs,
-        error: { code: error.code, message: error.message },
-      });
+      await publishFailure(publish, base, now, dependencies.createEventId, error, durationMs, tail);
       return { ok: false, error, durationMs };
     }
 
-    await publish('done', { durationMs });
+    await publish(
+      stamp(base, now, dependencies.createEventId, {
+        type: 'done',
+        payload: { durationMs },
+      }),
+    );
+    await publish(
+      stamp(base, now, dependencies.createEventId, {
+        type: 'status',
+        payload: { state: 'idle', source: 'lifecycle' },
+      }),
+    );
     return { ok: true, text, durationMs };
   } catch (error) {
     const durationMs = elapsed(startedAt, now);
@@ -144,16 +219,84 @@ export async function relay(
     if (!relayError) {
       throw error;
     }
-    await publish('error', {
+    await publishFailure(
+      publish,
+      base,
+      now,
+      dependencies.createEventId,
+      relayError,
       durationMs,
-      error: { code: relayError.code, message: relayError.message },
-    });
+      tail,
+    );
     return { ok: false, error: relayError, durationMs };
   } finally {
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
   }
+}
+
+interface EventBase {
+  provider: string;
+  host: string;
+  instance: string;
+  taskId: string;
+}
+
+function stamp(
+  base: EventBase,
+  now: () => number,
+  createEventId: (() => string) | undefined,
+  body: Pick<RelayEvent, 'type' | 'payload'>,
+): RelayEvent {
+  return {
+    v: 1,
+    id: createEventId?.() ?? randomUUID(),
+    ts: new Date(now()).toISOString(),
+    instance: base.instance,
+    provider: base.provider,
+    host: base.host,
+    taskId: base.taskId,
+    type: body.type,
+    payload: body.payload,
+  } as RelayEvent;
+}
+
+async function publishFailure(
+  publish: (event: RelayEvent) => Promise<void>,
+  base: EventBase,
+  now: () => number,
+  createEventId: (() => string) | undefined,
+  error: RelayError,
+  durationMs: number,
+  tail: string,
+): Promise<void> {
+  const message = clampText(redactSecrets(error.message), 2000);
+  const reason = clampText(message.length > 0 ? message : '未知错误', 200);
+  const tailField = tail.length > 0 ? { tail } : {};
+  await publish(
+    stamp(base, now, createEventId, {
+      type: 'error',
+      payload: {
+        durationMs,
+        code: error.code,
+        message: message.length > 0 ? message : '未知错误',
+        ...tailField,
+      },
+    }),
+  );
+  await publish(
+    stamp(base, now, createEventId, {
+      type: 'status',
+      payload: {
+        state: 'stuck',
+        source: 'lifecycle',
+        code: error.code,
+        reason,
+        ...tailField,
+      },
+    }),
+  );
 }
 
 function failure(error: RelayError, startedAt: number, now: () => number): RelayResult {

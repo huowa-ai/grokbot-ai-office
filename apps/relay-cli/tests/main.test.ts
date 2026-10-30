@@ -154,5 +154,10 @@ function testEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
       env[key] = value;
     }
   }
-  return { ...env, RELAY_WORKSPACE: tempDir(), ...extra };
+  return {
+    ...env,
+    RELAY_WORKSPACE: tempDir(),
+    RELAY_EVENTS_PATH: path.join(tempDir(), 'events.jsonl'),
+    ...extra,
+  };
 }

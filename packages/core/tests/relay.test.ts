@@ -47,6 +47,7 @@ describe('relay', () => {
       {
         hasProvider: () => true,
         host: 'mac',
+        promptPreviewChars: 0,
         resolveAdapter: () => adapter,
         events: {
           async emit(event) {
@@ -58,10 +59,24 @@ describe('relay', () => {
 
     expect(result.ok).toBe(false);
     expect(result.error?.code).toBe('TIMEOUT');
-    expect(events.map((event) => event.type)).toEqual(['started', 'replying_to', 'error']);
-    expect(events.every((event) => event.host === 'mac')).toBe(true);
+    expect(events.map((event) => event.type)).toEqual([
+      'started',
+      'status',
+      'replying_to',
+      'error',
+      'status',
+    ]);
+    expect(events.every((event) => event.host === 'mac' && event.instance === 'codex@mac')).toBe(
+      true,
+    );
     expect(JSON.stringify(events)).not.toContain(prompt);
-    expect(events[1]?.replyTo).toBe('huowa');
+    const replying = events.find((event) => event.type === 'replying_to');
+    expect(replying?.type === 'replying_to' ? replying.payload.replyTo : undefined).toBe('huowa');
+    const stuck = events.at(-1);
+    expect(stuck?.type === 'status' ? stuck.payload : undefined).toMatchObject({
+      state: 'stuck',
+      code: 'TIMEOUT',
+    });
   });
 
   it('relay 原样转发适配器文本并在空响应时返回 EMPTY_RESPONSE', async () => {
@@ -162,6 +177,7 @@ describe('relay', () => {
       {
         hasProvider: () => true,
         host: 'cloud',
+        promptPreviewChars: 0,
         resolveAdapter: () => ({
           kind: 'http',
           async call() {
@@ -180,8 +196,20 @@ describe('relay', () => {
     );
 
     expect(result).toMatchObject({ ok: true, text: answer });
-    expect(events.map((event) => event.type)).toEqual(['started', 'replying_to', 'done']);
-    expect(events.every((event) => event.host === 'cloud')).toBe(true);
+    expect(events.map((event) => event.type)).toEqual([
+      'started',
+      'status',
+      'replying_to',
+      'done',
+      'status',
+    ]);
+    expect(
+      events.every((event) => event.host === 'cloud' && event.instance === 'codex@cloud'),
+    ).toBe(true);
+    expect(events.at(-1)?.type === 'status' ? events.at(-1)?.payload : undefined).toMatchObject({
+      state: 'idle',
+      source: 'lifecycle',
+    });
     const encoded = JSON.stringify(events);
     expect(encoded).not.toContain(prompt);
     expect(encoded).not.toContain(answer);

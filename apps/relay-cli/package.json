@@ -24,6 +24,8 @@
   "dependencies": {
     "@grokbot-ai-office/adapters": "workspace:*",
     "@grokbot-ai-office/core": "workspace:*",
+    "@grokbot-ai-office/event-server": "workspace:*",
+    "@grokbot-ai-office/events": "workspace:*",
     "@grokbot-ai-office/registry": "workspace:*"
   }
 }
