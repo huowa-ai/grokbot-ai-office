@@ -10,6 +10,7 @@ export interface StatusEvent {
   id: string;
   ts: string;
   provider: string;
+  host: string;
   type: StatusEventType;
   requestId: string;
   replyTo?: string;

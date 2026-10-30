@@ -113,6 +113,7 @@ Add adapter code only when none of the three methods can cover the provider.
 - Every `subscription` provider must set `safe_mode`.
 - Events default to `~/.grokbot-ai-office/events.jsonl`. Override the path with `RELAY_EVENTS_PATH`. Events do not store the prompt or the answer.
 - Agents on one machine share `RELAY_WORKSPACE`, which defaults to `~/.grokbot-ai-office/workspace`. That directory must not hold secrets, and `.gitignore` excludes `workspace/`.
+- `RELAY_HOST` names the machine, for example `mac` or `cloud`. The external id is `provider@host`, such as `codex@mac`. The registry stays shared per AI name.
 - Do not commit `.env`, CLI login files, event logs, or the workspace.
 
 ## Roadmap

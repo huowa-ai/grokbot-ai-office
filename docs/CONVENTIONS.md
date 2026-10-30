@@ -116,7 +116,7 @@ semantic-release 据此自动决定版本号：`fix` 升补丁号，`feat` 升�
 
 ## 7. 错误处理
 
-- 只抛 `RelayError` 或其子类，带固定错误码，详见 `ARCHITECTURE.md` 第 7 节。
+- 只抛 `RelayError` 或其子类，带固定错误码，详见 `ARCHITECTURE.md` 第 8 节。
 - `async` 函数一律 `await`，不留悬空 Promise。
 - CLI 入口捕获所有错误，打印错误码和说明，以非零码退出。
 - 禁止空 `catch`；禁止用默认文本冒充 AI 回答。
@@ -133,6 +133,7 @@ semantic-release 据此自动决定版本号：`fix` 升补丁号，`feat` 升�
    OPENROUTER_API_KEY=
    RELAY_EVENTS_PATH=
    RELAY_WORKSPACE=
+   RELAY_HOST=
    ```
 
 3. 不在 issue、PR、聊天、日志中粘贴密钥。同一台机器上的 agent 共用 `RELAY_WORKSPACE`，默认是 `~/.grokbot-ai-office/workspace`。不要把密钥放进该目录。

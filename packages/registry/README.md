@@ -8,6 +8,9 @@
 - `parseProvidersConfig(input)`：校验已经解析的对象。
 - `providersFileSchema`：zod schema。
 - `ProvidersConfigError`：校验失败。错误文本会隐藏 `sk-` 片段。
+- `isAvailableOn(provider, host)`：未写 `hosts` 时任意主机可用；写了则只匹配列出的主机。
+- `formatInstanceId` / `parseInstanceId`：`provider@host`，例如 `codex@mac`。
+- `readRelayHost(env)`：读取 `RELAY_HOST`。空值视为未设置，非法名字直接报错。
 
 ## 校验
 

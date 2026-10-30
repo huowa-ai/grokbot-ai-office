@@ -58,6 +58,41 @@ describe('providersFileSchema', () => {
     expect(error.issues.some((issue) => issue.message.includes('密钥'))).toBe(true);
   });
 
+  it('hosts 使用合法主机名时校验通过', () => {
+    const config = parseProvidersConfig({
+      ...validFile,
+      providers: {
+        codex: {
+          auth: 'subscription',
+          command: ['codex', 'exec'],
+          safe_mode: '--sandbox read-only',
+          hosts: ['mac', 'cloud'],
+        },
+      },
+    });
+
+    expect(config.providers.codex?.hosts).toEqual(['mac', 'cloud']);
+  });
+
+  it('hosts 含有非法主机名时校验失败', () => {
+    const error = capture(() =>
+      parseProvidersConfig({
+        ...validFile,
+        providers: {
+          codex: {
+            auth: 'subscription',
+            command: ['codex', 'exec'],
+            safe_mode: '--sandbox read-only',
+            hosts: ['Mac'],
+          },
+        },
+      }),
+    );
+
+    expect(error.issues.some((issue) => issue.path.split('.').includes('hosts'))).toBe(true);
+    expect(error.message).not.toMatch(/Mac/);
+  });
+
   it('未知 auth 时校验失败', () => {
     const error = capture(() =>
       parseProvidersConfig({

@@ -46,6 +46,7 @@ describe('relay', () => {
       { provider: 'codex', prompt, timeoutMs: 30, replyTo: 'huowa' },
       {
         hasProvider: () => true,
+        host: 'mac',
         resolveAdapter: () => adapter,
         events: {
           async emit(event) {
@@ -58,6 +59,7 @@ describe('relay', () => {
     expect(result.ok).toBe(false);
     expect(result.error?.code).toBe('TIMEOUT');
     expect(events.map((event) => event.type)).toEqual(['started', 'replying_to', 'error']);
+    expect(events.every((event) => event.host === 'mac')).toBe(true);
     expect(JSON.stringify(events)).not.toContain(prompt);
     expect(events[1]?.replyTo).toBe('huowa');
   });

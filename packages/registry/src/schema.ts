@@ -4,9 +4,13 @@ export const AUTH_METHODS = ['subscription', 'api_key', 'openai_compatible'] as 
 
 export type AuthMethod = (typeof AUTH_METHODS)[number];
 
-const providerNameSchema = z
-  .string()
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, '提供者名字必须是小写字母、数字和连字符');
+const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+const providerNameSchema = z.string().regex(namePattern, '提供者名字必须是小写字母、数字和连字符');
+
+export const hostNameSchema = z.string().regex(namePattern, '主机名必须是小写字母、数字和连字符');
+
+const hostsSchema = z.array(hostNameSchema).optional();
 
 const keyEnvSchema = z.string().superRefine((value, ctx) => {
   if (/sk-/i.test(value)) {
@@ -31,6 +35,7 @@ const subscriptionProviderSchema = z
     input: z.enum(['stdin', 'arg', 'file']).optional(),
     safe_mode: z.string().refine((value) => value.trim().length > 0, 'safe_mode 不能为空'),
     output_filter: z.string().optional(),
+    hosts: hostsSchema,
   })
   .strict();
 
@@ -40,6 +45,7 @@ const apiKeyProviderSchema = z
     vendor: z.string().min(1).optional(),
     model: z.string().min(1).optional(),
     key_env: keyEnvSchema,
+    hosts: hostsSchema,
   })
   .strict();
 
@@ -49,6 +55,7 @@ const openaiCompatibleProviderSchema = z
     base_url: z.string().url(),
     model: z.string().min(1),
     key_env: keyEnvSchema.nullable().optional(),
+    hosts: hostsSchema,
   })
   .strict();
 

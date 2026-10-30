@@ -113,6 +113,7 @@ pnpm relay missing-bot "你好"
 - 每个 `subscription` 提供者都必须声明 `safe_mode`。
 - 事件默认写到 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 改路径。事件不记录提示原文和回答原文。
 - 同一台机器上的 agent 共用 `RELAY_WORKSPACE`，默认是 `~/.grokbot-ai-office/workspace`。该目录不得存放密钥，`.gitignore` 会排除 `workspace/`。
+- `RELAY_HOST` 区分机器，例如 `mac` 和 `cloud`。对外标识是 `provider@host`，如 `codex@mac`。注册表仍按 AI 名字共享。
 - 不要提交 `.env`、CLI 登录文件、事件日志或工作目录。
 
 ## 路线图

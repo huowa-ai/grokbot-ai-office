@@ -5,7 +5,7 @@
 ## 公开 API
 
 - `EVENT_TYPES`：`started`、`replying_to`、`done`、`error`。
-- `StatusEvent`：事件结构。不含提示原文和回答原文。
+- `StatusEvent`：事件结构。每条都有 `host`。不含提示原文和回答原文。
 - `defaultEventsPath()`：默认 `~/.grokbot-ai-office/events.jsonl`。
 - `resolveEventsPath(env)`：优先使用 `RELAY_EVENTS_PATH`。
 

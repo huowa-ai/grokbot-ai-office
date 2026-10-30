@@ -9,6 +9,7 @@ export interface RelayDependencies {
   hasProvider: (name: string) => boolean;
   resolveAdapter?: (name: string) => AdapterPort | undefined;
   events?: EventSink;
+  host?: string;
   createRequestId?: () => string;
   now?: () => number;
 }
@@ -43,6 +44,7 @@ export async function relay(
       id: randomUUID(),
       ts: new Date(now()).toISOString(),
       provider: request.provider,
+      host: dependencies.host ?? '',
       type,
       requestId,
     };

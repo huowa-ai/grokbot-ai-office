@@ -27,6 +27,7 @@ export interface RelayEvent {
   id: string;
   ts: string;
   provider: string;
+  host: string;
   type: RelayEventType;
   requestId: string;
   replyTo?: string;

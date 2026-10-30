@@ -21,6 +21,7 @@
 - 接入新 AI 优先只改 `configs/providers.yaml`，三种 `auth`：`subscription`、`api_key`、`openai_compatible`。
 - 每个 `subscription` 提供者必须有只读或安全模式参数。
 - 同一台机器上，适配器的工作目录是 `RELAY_WORKSPACE`（默认 `~/.grokbot-ai-office/workspace`）。不要把密钥放进该目录。
+- 启动时读取 `RELAY_HOST`（如 `mac`、`cloud`）。对外标识是 `<provider>@<host>`。注册表仍按 AI 名字共享；可选 `hosts` 限定可用机器。
 - 出错返回 `RelayError` 和错误码，不编造回答，不写空 `catch`。
 - 单元测试不调用真实 AI。
 - 提交信息用约定式提交，如 `feat(adapters): ...`；在分支上工作并开 PR，不直接推 `main`。
