@@ -1,0 +1,25 @@
+{
+  "name": "@grokbot-ai-office/registry",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "读取并校验 configs/providers.yaml。只记录密钥的变量名，不读取密钥的值。",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts packages/registry/tests"
+  },
+  "dependencies": {
+    "yaml": "^2.8.0",
+    "zod": "^3.25.76"
+  }
+}

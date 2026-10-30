@@ -1,0 +1,29 @@
+{
+  "name": "@grokbot-ai-office/relay-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "命令行入口 ai-relay。只组装依赖并调用 core。",
+  "bin": {
+    "ai-relay": "./dist/cli.js"
+  },
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "import": "./dist/main.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts apps/relay-cli/tests"
+  },
+  "dependencies": {
+    "@grokbot-ai-office/adapters": "workspace:*",
+    "@grokbot-ai-office/core": "workspace:*",
+    "@grokbot-ai-office/registry": "workspace:*"
+  }
+}

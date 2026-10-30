@@ -1,0 +1,21 @@
+{
+  "name": "@grokbot-ai-office/events",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "状态事件的类型与默认路径。不包含中转业务判断。",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts packages/events/tests"
+  }
+}

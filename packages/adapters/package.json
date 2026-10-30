@@ -1,0 +1,24 @@
+{
+  "name": "@grokbot-ai-office/adapters",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "按 auth 选择 CLI、官方 API 或 OpenAI 兼容适配器。适配器之间不互相导入。",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts packages/adapters/tests"
+  },
+  "dependencies": {
+    "@grokbot-ai-office/core": "workspace:*"
+  }
+}

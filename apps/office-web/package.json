@@ -1,0 +1,24 @@
+{
+  "name": "@grokbot-ai-office/office-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "虚拟办公室界面占位。只读事件，不调用 AI，不读取密钥。",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts apps/office-web/tests"
+  },
+  "dependencies": {
+    "@grokbot-ai-office/events": "workspace:*"
+  }
+}
