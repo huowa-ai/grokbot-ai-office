@@ -21,8 +21,10 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 | `auth` | 适配器 | 凭证放在哪里 | 适用 |
 | --- | --- | --- | --- |
 | `subscription` | CLI 适配器 | 各 CLI 自己的登录文件，仓库不保存 | Codex、CodeBuddy、Hermes、OpenClaw |
-| `api_key` | 官方 API 适配器 | 环境变量，配置里只写 `key_env` | DeepSeek、Anthropic、Gemini、Kimi、GLM、MiniMax、OpenRouter |
+| `api_key` | 官方 API 适配器 | 环境变量，配置里只写 `key_env` | DeepSeek、Anthropic（Claude）、Gemini、Kimi、GLM、MiniMax、OpenRouter |
 | `openai_compatible` | OpenAI 格式适配器 | `base_url` 加可选的 `key_env` | 中转站、OpenRouter、本地 Ollama |
+
+已接通的官方厂商是 DeepSeek、Kimi、GLM、Anthropic（Claude）和 Gemini。Claude 使用 `ANTHROPIC_API_KEY`，Gemini 使用 `GEMINI_API_KEY`。这两项的示例写在 `configs/providers.yaml` 的注释里，默认不启用。
 
 ## 架构
 

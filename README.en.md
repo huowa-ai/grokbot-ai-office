@@ -21,8 +21,10 @@ Goals:
 | `auth` | Adapter | Where credentials live | Used for |
 | --- | --- | --- | --- |
 | `subscription` | CLI adapter | The CLI's own login files. The repo never stores them. | Codex, CodeBuddy, Hermes, OpenClaw |
-| `api_key` | Official API adapter | Environment variables. Config only names `key_env`. | DeepSeek, Anthropic, Gemini, Kimi, GLM, MiniMax, OpenRouter |
+| `api_key` | Official API adapter | Environment variables. Config only names `key_env`. | DeepSeek, Anthropic (Claude), Gemini, Kimi, GLM, MiniMax, OpenRouter |
 | `openai_compatible` | OpenAI-format adapter | `base_url` plus optional `key_env` | Proxies, OpenRouter, local Ollama |
+
+Implemented official vendors are DeepSeek, Kimi, GLM, Anthropic (Claude), and Gemini. Claude reads `ANTHROPIC_API_KEY`. Gemini reads `GEMINI_API_KEY`. Their examples are commented out in `configs/providers.yaml` and stay disabled until you uncomment them.
 
 ## Architecture
 

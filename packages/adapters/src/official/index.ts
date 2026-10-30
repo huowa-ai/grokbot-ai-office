@@ -1,12 +1,14 @@
 import { type AdapterPort, RelayError } from '@grokbot-ai-office/core';
 
+import { postAnthropicMessage } from '../http/anthropic.js';
 import {
   postChatCompletions,
   probeEndpoint,
   readRequiredApiKey,
 } from '../http/chat-completions.js';
+import { postGeminiGenerate } from '../http/gemini.js';
 import type { AdapterRuntime, ApiKeyConfig } from '../types.js';
-import { findVendor } from './vendors.js';
+import { type VendorDefinition, findVendor } from './vendors.js';
 
 export function createOfficialAdapter(
   config: ApiKeyConfig,
@@ -19,22 +21,48 @@ export function createOfficialAdapter(
     kind: 'http',
     async call(request, signal) {
       const vendor = resolveVendor(config.vendor, providerName);
-      if (vendor.style !== 'openai-chat' || vendor.baseUrl === undefined) {
-        throw new RelayError('CONFIG_INVALID', vendor.note ?? `尚未支持 vendor：${vendor.id}`);
-      }
       const model = config.model ?? vendor.defaultModel;
-      if (model === undefined || model.length === 0) {
+      if (model.length === 0) {
         throw new RelayError('CONFIG_INVALID', `提供者 ${providerName} 缺少 model`);
       }
-      const apiKey = readRequiredApiKey(config.key_env, env);
-      return postChatCompletions({
-        baseUrl: vendor.baseUrl,
-        model,
-        prompt: request.prompt,
-        apiKey,
-        signal,
-        fetchImpl: runtime.fetchImpl,
-      });
+      const apiKey = readRequiredApiKey(resolveKeyEnv(config, vendor), env);
+      switch (vendor.style) {
+        case 'openai-chat': {
+          if (vendor.baseUrl === undefined) {
+            throw new RelayError('CONFIG_INVALID', `尚未支持 vendor：${vendor.id}`);
+          }
+          return postChatCompletions({
+            baseUrl: vendor.baseUrl,
+            model,
+            prompt: request.prompt,
+            apiKey,
+            signal,
+            fetchImpl: runtime.fetchImpl,
+          });
+        }
+        case 'anthropic-messages':
+          return postAnthropicMessage({
+            model,
+            prompt: request.prompt,
+            apiKey,
+            signal,
+            fetchImpl: runtime.fetchImpl,
+          });
+        case 'gemini-generate':
+          return postGeminiGenerate({
+            model,
+            prompt: request.prompt,
+            apiKey,
+            signal,
+            fetchImpl: runtime.fetchImpl,
+          });
+        default: {
+          const unexpected: never = vendor.style;
+          throw new RelayError('CONFIG_INVALID', `尚未支持 vendor：${String(unexpected)}`, {
+            isOperational: false,
+          });
+        }
+      }
     },
     async selfcheck() {
       if (config.vendor === undefined || config.vendor.trim().length === 0) {
@@ -44,23 +72,21 @@ export function createOfficialAdapter(
       if (!vendor) {
         return { ok: false, detail: `尚未支持 vendor：${config.vendor}` };
       }
-      if (vendor.style !== 'openai-chat' || vendor.baseUrl === undefined) {
-        return { ok: false, detail: vendor.note ?? `尚未支持 vendor：${vendor.id}` };
-      }
-      const key = env[config.key_env];
+      const keyEnv = resolveKeyEnv(config, vendor);
+      const key = env[keyEnv];
       if (typeof key !== 'string' || key.trim().length === 0) {
-        return { ok: false, detail: `${config.key_env} 未设置` };
+        return { ok: false, detail: `${keyEnv} 未设置` };
       }
-      const probe = await probeEndpoint(vendor.baseUrl, runtime.fetchImpl);
+      const probe = await probeEndpoint(vendor.probeUrl, runtime.fetchImpl);
       return {
         ok: probe.ok,
-        detail: probe.ok ? `已设置 ${config.key_env}，${probe.detail}` : probe.detail,
+        detail: probe.ok ? `已设置 ${keyEnv}，${probe.detail}` : probe.detail,
       };
     },
   };
 }
 
-function resolveVendor(vendorName: string | undefined, providerName: string) {
+function resolveVendor(vendorName: string | undefined, providerName: string): VendorDefinition {
   if (vendorName === undefined || vendorName.trim().length === 0) {
     throw new RelayError('CONFIG_INVALID', `提供者 ${providerName} 缺少 vendor`);
   }
@@ -69,4 +95,11 @@ function resolveVendor(vendorName: string | undefined, providerName: string) {
     throw new RelayError('CONFIG_INVALID', `尚未支持 vendor：${vendorName}`);
   }
   return vendor;
+}
+
+function resolveKeyEnv(config: ApiKeyConfig, vendor: VendorDefinition): string {
+  if (config.key_env.trim().length > 0) {
+    return config.key_env;
+  }
+  return vendor.defaultKeyEnv;
 }

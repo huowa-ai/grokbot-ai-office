@@ -118,11 +118,10 @@ describe('http adapters', () => {
   it('官方适配器遇到尚未实现的 vendor 时返回 CONFIG_INVALID', async () => {
     const { fetchImpl, calls } = mockFetch(() => jsonResponse(200, {}));
     const error = await capture(() =>
-      createAdapter(
-        { auth: 'api_key', vendor: 'anthropic', key_env: 'ANTHROPIC_API_KEY' },
-        'claude',
-        { env: { ANTHROPIC_API_KEY: 'test-key' }, fetchImpl },
-      ).call({ provider: 'claude', prompt: 'hi' }, new AbortController().signal),
+      createAdapter({ auth: 'api_key', vendor: 'minimax', key_env: 'MINIMAX_API_KEY' }, 'minimax', {
+        env: { MINIMAX_API_KEY: 'test-key' },
+        fetchImpl,
+      }).call({ provider: 'claude', prompt: 'hi' }, new AbortController().signal),
     );
 
     expect(error.code).toBe('CONFIG_INVALID');

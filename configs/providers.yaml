@@ -40,3 +40,16 @@ providers:
     base_url: http://localhost:11434/v1
     model: qwen2.5:7b
     key_env: null
+
+  # 去掉每行开头的「# 」即可启用。密钥只放在环境变量里，不要写进这个文件。
+  # claude:
+  #   auth: api_key
+  #   vendor: anthropic
+  #   model: claude-sonnet-4-5
+  #   key_env: ANTHROPIC_API_KEY
+  #
+  # gemini:
+  #   auth: api_key
+  #   vendor: gemini
+  #   model: gemini-2.5-flash
+  #   key_env: GEMINI_API_KEY

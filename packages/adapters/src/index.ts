@@ -26,7 +26,7 @@ export function createAdapter(
   }
 }
 
-export { OFFICIAL_CHAT_VENDORS } from './official/vendors.js';
+export { OFFICIAL_CHAT_VENDORS, OFFICIAL_VENDORS } from './official/vendors.js';
 export { resolveWorkspace } from './workspace.js';
 export type {
   AdapterConfig,

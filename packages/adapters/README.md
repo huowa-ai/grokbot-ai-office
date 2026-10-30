@@ -5,7 +5,7 @@
 | 目录 | `auth` | 行为 |
 | --- | --- | --- |
 | `src/cli/` | `subscription` | 执行 `command`。工作目录是 `RELAY_WORKSPACE` |
-| `src/official/` | `api_key` | 官方 HTTP。DeepSeek、Kimi、GLM 走 chat completions |
+| `src/official/` | `api_key` | 官方 HTTP。DeepSeek、Kimi、GLM、Anthropic、Gemini |
 | `src/openai-compatible/` | `openai_compatible` | `POST {base_url}/chat/completions` |
 
 ## 公开 API
@@ -46,12 +46,14 @@ console.log(resolveWorkspace(process.env));
 
 已接通的官方 vendor：
 
-| vendor | 地址 | 默认模型 |
-| --- | --- | --- |
-| `deepseek` | `https://api.deepseek.com` | `deepseek-chat` |
-| `kimi` | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
-| `glm` | `https://open.bigmodel.cn/api/paas/v4` | `glm-4-flash` |
+| vendor | 地址 | 默认模型 | 默认 `key_env` |
+| --- | --- | --- | --- |
+| `deepseek` | `https://api.deepseek.com` | `deepseek-chat` | `DEEPSEEK_API_KEY` |
+| `kimi` | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` | `MOONSHOT_API_KEY` |
+| `glm` | `https://open.bigmodel.cn/api/paas/v4` | `glm-4-flash` | `ZHIPU_API_KEY` |
+| `anthropic` | `https://api.anthropic.com/v1/messages` | `claude-sonnet-4-5` | `ANTHROPIC_API_KEY` |
+| `gemini` | `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent` | `gemini-2.5-flash` | `GEMINI_API_KEY` |
 
-`anthropic` 和 `gemini` 的协议不同，配置了会返回 `CONFIG_INVALID`，不会假装调用成功。
+Anthropic 使用 `x-api-key` 和 `anthropic-version: 2023-06-01`，请求体包含 `model`、`max_tokens`（4096）和 `messages`。Gemini 把密钥放在 `x-goog-api-key` 头里，不放进 URL。回答分别从 content 块和 `candidates[0].content.parts` 读取。
 
 `selfcheck()` 只检查命令是否存在、变量是否已设置，以及对端点发一个不带密钥的 GET。单元测试不访问真实模型。

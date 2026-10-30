@@ -1,5 +1,7 @@
 import { RelayError, redactSecrets } from '@grokbot-ai-office/core';
 
+import { postJson } from './post-json.js';
+
 export interface ChatCompletionInput {
   baseUrl: string;
   model: string;
@@ -33,7 +35,6 @@ export function readOptionalApiKey(
 }
 
 export async function postChatCompletions(input: ChatCompletionInput): Promise<string> {
-  const fetchImpl = input.fetchImpl ?? fetch;
   const headers: Record<string, string> = {
     'content-type': 'application/json',
   };
@@ -41,47 +42,17 @@ export async function postChatCompletions(input: ChatCompletionInput): Promise<s
     headers.authorization = `Bearer ${input.apiKey}`;
   }
 
-  let response: Response;
-  try {
-    response = await fetchImpl(chatCompletionsUrl(input.baseUrl), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: input.model,
-        messages: [{ role: 'user', content: input.prompt }],
-      }),
-      signal: input.signal,
-    });
-  } catch (error) {
-    if (input.signal.aborted || isAbortError(error)) {
-      throw new RelayError('TIMEOUT', '请求已中止', { cause: error });
-    }
-    const message = error instanceof Error ? error.message : '网络请求失败';
-    throw new RelayError('HTTP_ERROR', redactSecrets(message), { cause: error });
-  }
-
-  if (response.status === 401 || response.status === 403) {
-    throw new RelayError('AUTH_EXPIRED', `认证失败（HTTP ${response.status}）`);
-  }
-
-  const raw = await response.text();
-  if (!response.ok) {
-    const detail = redactSecrets(raw).slice(0, 500).trim();
-    const message =
-      detail.length > 0 ? `HTTP ${response.status} ${detail}` : `HTTP ${response.status}`;
-    throw new RelayError('HTTP_ERROR', message);
-  }
-
-  if (raw.trim().length === 0) {
-    throw new RelayError('EMPTY_RESPONSE', '接口返回了空内容');
-  }
-
-  let payload: unknown;
-  try {
-    payload = JSON.parse(raw) as unknown;
-  } catch (error) {
-    throw new RelayError('HTTP_ERROR', '接口返回了无法解析的内容', { cause: error });
-  }
+  const payload = await postJson({
+    url: chatCompletionsUrl(input.baseUrl),
+    headers,
+    body: {
+      model: input.model,
+      messages: [{ role: 'user', content: input.prompt }],
+    },
+    signal: input.signal,
+    fetchImpl: input.fetchImpl,
+    apiKey: input.apiKey,
+  });
 
   const text = readContent(payload);
   if (text.trim().length === 0) {
@@ -145,8 +116,4 @@ function partText(part: unknown): string {
     return part.text;
   }
   return '';
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError';
 }
