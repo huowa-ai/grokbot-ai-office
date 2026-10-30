@@ -32,6 +32,7 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 flowchart TB
   subgraph appLayer [应用层]
     cli[apps/relay-cli]
+    mcp[apps/mcp-server]
     server[apps/event-server]
     web[apps/office-web]
   end
@@ -44,6 +45,7 @@ flowchart TB
     events[packages/events]
   end
   cli -->|组装并调用| core
+  mcp -->|ask 调用 relay| core
   adapters -->|实现 AdapterPort| core
   registry -->|提供配置| cli
   events -->|实现 EventSink| core
@@ -80,6 +82,7 @@ grokbot-ai-office/
 ├── apps/
 │   ├── relay-cli/
 │   ├── event-server/
+│   ├── mcp-server/
 │   └── office-web/
 ├── configs/providers.yaml
 ├── scripts/
@@ -121,6 +124,8 @@ ai-relay hook stop --instance claude@mac
 
 `pnpm serve` 就是 `ai-relay serve`。它只监听 `127.0.0.1:8787`，通过 WebSocket `/events` 推送新事件，并用 `GET /state` 给后加入的客户端一份快照。绑到其他地址时必须设置 `RELAY_SERVER_TOKEN`。`POST /hook` 只追加状态，不会运行 AI。钩子配置见 [docs/HOOKS.md](./docs/HOOKS.md)。
 
+`ai-relay mcp` 把同一套中转暴露成 MCP 工具 `ask`、`list_agents`、`office_status`。`--http` 默认监听 `127.0.0.1:8788`。说明见 [docs/MCP.md](./docs/MCP.md)。
+
 `subscription` 可以加 `pty: true`，用伪终端保留颜色和光标。`node-pty` 加载失败时会退回管道。
 
 自检不进入 CI。它检查 CLI 是否存在、环境变量是否已设置、HTTP 端点是否可达，不会把密钥发出去，也不会把提示发给模型。
@@ -158,8 +163,9 @@ pnpm selfcheck deepseek
 
 1. **骨架**。已完成。
 2. **中转核心与接入适配器**。已完成，包括 DeepSeek、Kimi、GLM、Claude、Gemini 和 OpenAI 兼容接口。
-3. **实时事件**。当前阶段：JSONL、本机推送、交接、批准、伪终端和 CLI 钩子。
-4. 之后是 MCP 服务器、3D 办公室、老板视角、macOS 灵动岛和 npm 分发。细节在路线图里。
+3. **实时事件**。已完成：JSONL、本机推送、交接、批准、伪终端和 CLI 钩子。
+4. **MCP 服务器**。已完成：`ai-relay mcp`。见 [docs/MCP.md](./docs/MCP.md)。
+5. 之后是 3D 办公室、老板视角、macOS 灵动岛和 npm 分发。细节在路线图里。
 
 ## 文档
 
@@ -167,5 +173,6 @@ pnpm selfcheck deepseek
 - 架构：[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - 路线图：[docs/ROADMAP.md](./docs/ROADMAP.md)
 - CLI 钩子：[docs/HOOKS.md](./docs/HOOKS.md)
+- MCP 服务器：[docs/MCP.md](./docs/MCP.md)
 - 工程规范：[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 - 贡献：[CONTRIBUTING.md](./CONTRIBUTING.md)

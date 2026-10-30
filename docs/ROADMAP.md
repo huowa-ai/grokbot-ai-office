@@ -1,6 +1,6 @@
 # 路线图
 
-本文是已经定下来的计划。当前实现到第 3 步。第 3.5 步之后都还没做。
+本文是已经定下来的计划。当前实现到第 3.5 步。第 4 步之后都还没做。
 
 ## 第一步 骨架（完成）
 
@@ -14,7 +14,7 @@
 - `api_key`：DeepSeek、Kimi、GLM、Claude（Anthropic）、Gemini
 - `openai_compatible`：OpenAI 兼容接口，包括本地 Ollama
 
-## 第三步 实时事件（本阶段）
+## 第三步 实时事件（完成）
 
 事件写入 `~/.grokbot-ai-office/events.jsonl`，也可用 `RELAY_EVENTS_PATH` 改路径。`ai-relay serve` 把新事件推到本机 WebSocket，并用 `GET /state` 给后加入的客户端一份快照。
 
@@ -25,9 +25,9 @@
 
 交接和批准也在这一步：`ai-relay handoff`、`ai-relay approval request|resolve|list`。还没有界面。
 
-## 第 3.5 步 ai-relay 作为 MCP 服务器
+## 第 3.5 步 ai-relay 作为 MCP 服务器（完成）
 
-把中转做成 MCP 服务器，提供工具 `ask`、`list_agents`、`office_status`。在 Grok Bot 里作为自定义链接应用接入。中转 bot 改为调用这个 MCP，而不再拼接 Shell 命令。
+`ai-relay mcp` 把中转做成 MCP 服务器。工具有 `ask`、`list_agents`、`office_status`，以及交接和批准。传输有 stdio，也有默认只监听本机的 Streamable HTTP。Grok Bot 的中转 bot 调用这个 MCP，不再拼接 Shell 命令。说明见 [MCP.md](./MCP.md)。
 
 ## 第四步 3D 办公室第一版
 
@@ -44,3 +44,17 @@
 ## 第六步 分发
 
 发布 npm 包。用法是 `npx grokbot-ai-office init | mcp | office | ask`。同时导出 Grok Bot 模板。每个用户在自己的电脑上用自己的 AI 账号和 key 运行，不做托管 SaaS。npm 发布前需要先决定仓库是否公开。
+
+交付物还包括安装提示 `docs/SETUP_PROMPT.md` 和英文版 `docs/SETUP_PROMPT.en.md`。用户把它贴进 Grok Bot 或任何编程 AI，由对方按提示安装。这个写法受到 rakazo 仓库里 SETUP_PROMPT.md 的启发，只借鉴「一份可粘贴的安装提示」这个想法。
+
+提示要求对方：
+
+1. 运行 `npx grokbot-ai-office init`。
+2. 检测本机已经安装并登录的 CLI：codex、claude、gemini、codebuddy、hermes、openclaw。
+3. 询问 `RELAY_HOST` 和工作目录。
+4. 让用户自己把 API key 写进 `.env`。
+5. 用 `ask` 对每个提供者做一次冒烟。
+6. 启动 `mcp` 和 `office`。
+7. 用一张状态表结束。
+
+提示里的安全约束：不覆盖、不打印 `.env` 里的值；不打印、不提交密钥；不结束无关进程；不用 sudo；`subscription` 保持 `safe_mode`。

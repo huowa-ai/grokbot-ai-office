@@ -23,19 +23,19 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 采用端口与适配器（六边形）架构：核心逻辑定义接口（端口），外部 AI 以适配器实现接口。（参考：sairyss/domain-driven-hexagon，“Ports and Adapters” 一节）
 
 ```
-┌──────────────────────────────────────────┐
-│ apps/relay-cli      apps/office-web      │  应用层：入口与界面
-└───────┬───────────────────────┬──────────┘
-        │ 调用                   │ 只读事件
-┌───────▼──────────────┐        │
-│ packages/core        │        │           核心层：中转流程、端口定义
-│  - relay()           │        │
-│  - AdapterPort 接口  │        │
-└──┬────────┬────────┬─┘        │
-   │        │        │          │
-┌──▼─────┐┌─▼──────┐┌▼────────┐ │
-│adapters││registry││ events  │◄┘           基础设施层
-└────────┘└────────┘└─────────┘
+┌────────────────────────────────────────────────┐
+│ relay-cli       mcp-server       office-web    │  应用层：入口与界面
+└───────┬──────────────┬──────────────┬──────────┘
+        │ 调用          │ ask 调用      │ 只读事件
+┌───────▼──────────────▼──────────────┐
+│ packages/core                       │  核心层：中转流程、端口定义
+│  - relay()                          │
+│  - AdapterPort 接口                 │
+└──┬────────────┬────────────┬────────┘
+   │            │            │
+┌──▼─────┐  ┌───▼────┐  ┌────▼───┐
+│adapters│  │registry│  │ events │◄── 界面与事件服务只读   基础设施层
+└────────┘  └────────┘  └────────┘
 ```
 
 分三层的做法也与 microsoft/autogen 的 `autogen-core` / `autogen-ext` / `autogen-agentchat` 拆分一致：核心稳定、扩展可插拔、应用在最外层。
@@ -49,6 +49,7 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 | `packages/registry` | 读取并校验 `configs/providers.yaml`，返回类型化配置 | 不读取密钥的值，只记录变量名 |
 | `packages/events` | 把 `core` 里的事件写入 JSONL，并提供读取 | 不含业务判断，不调用 AI |
 | `apps/relay-cli` | 命令行入口 `ai-relay` | 不含中转逻辑，只组装依赖并调用 core |
+| `apps/mcp-server` | MCP 入站适配器。`ask` 调用 `relay()`，并读事件快照 | 不接受命令参数，不按调用方的字符串起进程 |
 | `apps/event-server` | 尾随事件日志，用 WebSocket 推送，提供 `GET /state` 和 `POST /hook` | 不调用 AI |
 | `apps/office-web` | 将来的虚拟办公室界面 | 不调用 AI，只读事件 |
 
@@ -57,7 +58,7 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 1. `apps → core`，应用层只依赖核心层的公开 API。
 2. `core` 只依赖自己定义的接口；适配器、注册表、事件由应用层在启动时注入（依赖倒置）。（参考：domain-driven-hexagon，“Dependency rule”）
 3. 适配器实现 `core` 中的 `AdapterPort`，**任何适配器不得导入另一个适配器**。
-4. `office-web` 只依赖 `packages/events` 的读取接口，不依赖 `core` 和 `adapters`。`event-server` 也只读事件日志；唯一的写入是 `POST /hook`，它只追加状态，不运行 AI。
+4. `office-web` 只依赖 `packages/events` 的读取接口，不依赖 `core` 和 `adapters`。`event-server` 也只读事件日志；唯一的写入是 `POST /hook`，它只追加状态，不运行 AI。`mcp-server` 可以调用 `relay()`，工具参数不能变成一条命令。
 5. 禁止循环依赖，CI 中用依赖检查（如 `dependency-cruiser` 或 eslint `import/no-restricted-paths`）强制。
 
 ### 2.3 包内结构
@@ -261,6 +262,10 @@ ai-relay approval list
 默认只监听 `127.0.0.1:8787`。可用 `RELAY_SERVER_HOST` 和 `RELAY_SERVER_PORT` 改地址。绑到其他地址时必须设置 `RELAY_SERVER_TOKEN`。令牌一旦设置，本机请求也要带 `Authorization: Bearer <token>`，WebSocket 可以用 `?token=`。
 
 `POST /hook` 是这个服务上唯一会写日志的入口。它只追加状态事件，不能启动 AI。钩子配置见 [HOOKS.md](./HOOKS.md)。
+
+### 5.5 MCP
+
+`ai-relay mcp` 启动 `apps/mcp-server`。它是另一个入站适配器：stdio，或默认绑定 `127.0.0.1:8788` 的 Streamable HTTP。工具 `ask` 只对注册表里的提供者调用 `relay()`，并写出同一套 `v: 1` 事件。`office_status` 读事件日志，快照与 `GET /state` 相同。非本机绑定必须设置 `RELAY_SERVER_TOKEN`，规则与 `ai-relay serve` 相同。说明见 [MCP.md](./MCP.md)。
 
 ### 5.4 命令行钩子
 

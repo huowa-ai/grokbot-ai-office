@@ -21,6 +21,8 @@ echo "你好" | pnpm relay ollama-local
 
 ```bash
 ai-relay serve
+ai-relay mcp
+ai-relay mcp --http
 ai-relay handoff codex@mac kimi@cloud ./notes.txt 请继续
 ai-relay approval request claude@mac "允许读取仓库"
 ai-relay approval resolve <id> true
@@ -28,7 +30,7 @@ ai-relay approval list
 ai-relay hook stop --instance claude@mac
 ```
 
-`serve`、`handoff`、`approval`、`hook` 是保留的子命令，不能当作提供者名字。`hook` 成功时不打印标准输出，方便接到 Claude Code 的钩子里。详见 `docs/HOOKS.md`。
+`serve`、`mcp`、`handoff`、`approval`、`hook` 是保留的子命令，不能当作提供者名字。`hook` 成功时不打印标准输出，方便接到 Claude Code 的钩子里。详见 `docs/HOOKS.md`。`mcp` 的用法见 `docs/MCP.md`。
 
 ## 自检
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-This is the agreed plan. The project currently implements step 3. Nothing after step 3.5 is built yet.
+This is the agreed plan. The project currently implements step 3.5. Nothing from step 4 onward is built yet.
 
 ## Step 1. Skeleton (done)
 
@@ -14,7 +14,7 @@ Repository layout, design docs, registry validation, and error codes.
 - `api_key`: DeepSeek, Kimi, GLM, Claude (Anthropic), and Gemini
 - `openai_compatible`: OpenAI-compatible endpoints, including local Ollama
 
-## Step 3. Live events (this stage)
+## Step 3. Live events (done)
 
 Events append to `~/.grokbot-ai-office/events.jsonl`. Override the path with `RELAY_EVENTS_PATH`. `ai-relay serve` pushes new events over a local WebSocket and serves `GET /state` for clients that join late.
 
@@ -25,9 +25,9 @@ This step also includes two ideas learned from the MIT-licensed project [munder-
 
 Handoff and approval are in this step too: `ai-relay handoff` and `ai-relay approval request|resolve|list`. There is no UI yet.
 
-## Step 3.5. ai-relay as an MCP server
+## Step 3.5. ai-relay as an MCP server (done)
 
-Expose the relay as an MCP server with tools `ask`, `list_agents`, and `office_status`. Connect it in Grok Bot as a custom link app. Relay bots call that MCP server instead of assembling shell commands.
+`ai-relay mcp` exposes the relay as an MCP server. The tools are `ask`, `list_agents`, `office_status`, plus handoff and approval. Transports are stdio and Streamable HTTP bound to loopback by default. A Grok Bot relay bot calls this MCP server instead of assembling shell commands. See [MCP.en.md](./MCP.en.md).
 
 ## Step 4. First 3D office
 
@@ -44,3 +44,17 @@ A capsule along the top of the screen. Each AI is one status dot. Hover to expan
 ## Step 6. Distribution
 
 Publish an npm package: `npx grokbot-ai-office init | mcp | office | ask`. Also export a Grok Bot template. Each person runs it on their own computer with their own AI accounts and keys. This is not a hosted SaaS. Before the npm publish, decide whether the repository is public.
+
+The deliverables also include a setup prompt, `docs/SETUP_PROMPT.md`, and an English copy, `docs/SETUP_PROMPT.en.md`. A person pastes it into Grok Bot or any coding AI, and that AI installs grokbot-ai-office. The pasteable-prompt idea comes from rakazo's SETUP_PROMPT.md. This step keeps the idea only.
+
+The prompt tells the AI to:
+
+1. Run `npx grokbot-ai-office init`.
+2. Detect CLIs that are installed and logged in: codex, claude, gemini, codebuddy, hermes, and openclaw.
+3. Ask for `RELAY_HOST` and the workspace.
+4. Have the person fill API keys into `.env` themselves.
+5. Smoke-test each provider with `ask`.
+6. Start `mcp` and `office`.
+7. Finish with a status table.
+
+Safety rules in the prompt: never overwrite or print `.env` values, never print or commit secrets, do not kill unrelated processes, no sudo, and keep `safe_mode` on.

@@ -13,6 +13,7 @@ import {
 } from '@grokbot-ai-office/core';
 import { resolveServerBind, startEventServer } from '@grokbot-ai-office/event-server';
 import { createJsonlEventSink, readEvents, resolveEventsPath } from '@grokbot-ai-office/events';
+import { resolveMcpBind, startMcpHttp, startMcpStdio } from '@grokbot-ai-office/mcp-server';
 import { formatInstanceId, readRelayHost } from '@grokbot-ai-office/registry';
 
 import type { RunIo } from './main.js';
@@ -139,6 +140,44 @@ export async function runApproval(
   }
 }
 
+export async function runMcp(
+  argv: readonly string[],
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+  io: RunIo,
+): Promise<number> {
+  const stderr = io.stderr ?? writeStderr;
+  const stdout = io.stdout ?? writeStdout;
+  try {
+    const flags = parseMcpArgs(argv);
+    const log = (message: string): void => {
+      stderr(message);
+    };
+    if (!flags.http) {
+      await startMcpStdio({ cwd, env, log });
+      return 0;
+    }
+    const bind = resolveMcpBind(env, {
+      ...(flags.host === undefined ? {} : { host: flags.host }),
+      ...(flags.port === undefined ? {} : { port: flags.port }),
+    });
+    const handle = await startMcpHttp({
+      cwd,
+      env,
+      host: bind.host,
+      port: bind.port,
+      ...(bind.token === undefined ? {} : { token: bind.token }),
+      log,
+    });
+    stdout(`MCP 服务已监听 ${handle.url}`);
+    await waitForStop(io.signal);
+    await handle.close();
+    return 0;
+  } catch (error) {
+    return report(error, stderr);
+  }
+}
+
 export async function runHook(
   argv: readonly string[],
   env: NodeJS.ProcessEnv,
@@ -175,6 +214,8 @@ export function usageText(): string {
     'ai-relay approval resolve <id> <true|false>',
     'ai-relay approval list',
     'ai-relay hook <事件> --instance <provider@host> [--summary 文本]',
+    'ai-relay mcp',
+    'ai-relay mcp --http [--host 127.0.0.1] [--port 8788]',
   ].join('\n');
 }
 
@@ -208,6 +249,50 @@ function parseServeArgs(argv: readonly string[]): { host?: string; port?: number
     throw new RelayError('CONFIG_INVALID', `无法识别的参数：${arg ?? ''}`);
   }
   return {
+    ...(host === undefined ? {} : { host }),
+    ...(port === undefined ? {} : { port }),
+  };
+}
+
+function parseMcpArgs(argv: readonly string[]): { http: boolean; host?: string; port?: number } {
+  let http = false;
+  let host: string | undefined;
+  let port: number | undefined;
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--http') {
+      http = true;
+      continue;
+    }
+    if (arg === '--host') {
+      const value = argv[index + 1];
+      if (value === undefined || value.startsWith('--')) {
+        throw new RelayError('CONFIG_INVALID', '缺少 --host 的值');
+      }
+      host = value;
+      index += 1;
+      continue;
+    }
+    if (arg === '--port') {
+      const value = argv[index + 1];
+      if (value === undefined || !/^\d+$/.test(value)) {
+        throw new RelayError('CONFIG_INVALID', '端口必须是 0 到 65535 的数字');
+      }
+      const parsed = Number(value);
+      if (parsed > 65535) {
+        throw new RelayError('CONFIG_INVALID', '端口必须是 0 到 65535 的数字');
+      }
+      port = parsed;
+      index += 1;
+      continue;
+    }
+    throw new RelayError('CONFIG_INVALID', `无法识别的参数：${arg ?? ''}`);
+  }
+  if (!http && (host !== undefined || port !== undefined)) {
+    throw new RelayError('CONFIG_INVALID', '--host 和 --port 只能与 --http 一起使用');
+  }
+  return {
+    http,
     ...(host === undefined ? {} : { host }),
     ...(port === undefined ? {} : { port }),
   };

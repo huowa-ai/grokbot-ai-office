@@ -112,6 +112,53 @@ describe('ai-relay commands', () => {
     expect(JSON.stringify(logged)).not.toContain(marker);
   });
 
+  it('mcp --http 在缺少令牌时拒绝监听 0.0.0.0', async () => {
+    const stderr: string[] = [];
+    const code = await run(
+      ['mcp', '--http', '--host', '0.0.0.0', '--port', '0'],
+      tempDir(),
+      { RELAY_EVENTS_PATH: path.join(tempDir(), 'events.jsonl') },
+      { stderr: (text) => stderr.push(text) },
+    );
+    expect(code).toBe(1);
+    expect(
+      stderr.some((line) => line.includes('CONFIG_INVALID') && line.includes('RELAY_SERVER_TOKEN')),
+    ).toBe(true);
+  });
+
+  it('mcp --http 监听本机后可以停止', async () => {
+    const controller = new AbortController();
+    const stdout: string[] = [];
+    const code = await run(
+      ['mcp', '--http', '--port', '0'],
+      tempDir(),
+      { RELAY_EVENTS_PATH: path.join(tempDir(), 'events.jsonl') },
+      {
+        stdout: (text) => {
+          stdout.push(text);
+          controller.abort();
+        },
+        signal: controller.signal,
+      },
+    );
+    expect(code).toBe(0);
+    expect(stdout[0]).toMatch(/^MCP 服务已监听 http:\/\/127\.0\.0\.1:\d+\/mcp$/);
+  });
+
+  it('mcp 在 stdio 模式收到 --port 时返回 CONFIG_INVALID', async () => {
+    const stderr: string[] = [];
+    const code = await run(
+      ['mcp', '--port', '8788'],
+      tempDir(),
+      {},
+      {
+        stderr: (text) => stderr.push(text),
+      },
+    );
+    expect(code).toBe(1);
+    expect(stderr.some((line) => line.includes('CONFIG_INVALID'))).toBe(true);
+  });
+
   it('serve 在缺少令牌时拒绝监听 0.0.0.0', async () => {
     const stderr: string[] = [];
     const code = await run(

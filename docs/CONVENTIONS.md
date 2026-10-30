@@ -25,6 +25,7 @@ grokbot-ai-office/
 ├── apps/
 │   ├── relay-cli/         # ai-relay 命令
 │   ├── event-server/      # 事件尾随与 WebSocket
+│   ├── mcp-server/        # MCP 入站适配器
 │   └── office-web/        # 虚拟办公室界面（后续）
 ├── configs/
 │   └── providers.yaml     # AI 注册表
@@ -90,7 +91,7 @@ packages/adapters/src/
 ```
 
 - 类型：`feat`、`fix`、`docs`、`refactor`、`test`、`chore`、`ci`、`perf`。
-- 范围用包名：`core`、`adapters`、`registry`、`events`、`relay-cli`、`office-web`、`configs`。
+- 范围用包名：`core`、`adapters`、`registry`、`events`、`relay-cli`、`mcp-server`、`office-web`、`configs`。
 - 不兼容改动加 `!` 或脚注 `BREAKING CHANGE:`。
 - 示例：`feat(adapters): 新增 openai-compatible 通用适配器`。
 
@@ -140,6 +141,7 @@ semantic-release 据此自动决定版本号：`fix` 升补丁号，`feat` 升�
    RELAY_SERVER_HOST=
    RELAY_SERVER_PORT=
    RELAY_SERVER_TOKEN=
+   RELAY_MCP_PORT=
    RELAY_STATE_CHUNK_LIMIT=
    RELAY_HOOK_INSTANCE=
    ```
