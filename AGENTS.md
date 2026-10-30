@@ -36,3 +36,11 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 ## PR 前检查
 
 `pnpm lint && pnpm typecheck && pnpm test` 全部通过。
+
+## Cursor Cloud specific instructions
+
+- 镜像里已经有 Node.js 22 和 pnpm 9.15.9。依赖用 `pnpm install --frozen-lockfile` 安装。
+- 没有开发服务器。`apps/office-web` 只是库，`officeStatus()` 返回只读模式和事件路径，不提供页面。
+- `pnpm relay` 和 `pnpm selfcheck` 运行的是编译结果。先执行 `pnpm build`。
+- 单元测试不调用真实模型。`.env.example` 里的密钥变量保持为空；缺少密钥时 CLI 返回 `AUTH_MISSING`，不会编造回答。
+- `ollama-local` 访问 `http://localhost:11434/v1`。本机没有 Ollama 时，这条调用会连接失败，这不表示依赖没装好。
