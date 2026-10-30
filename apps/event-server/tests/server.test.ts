@@ -150,6 +150,27 @@ describe('event server', () => {
       }),
     ).rejects.toMatchObject({ code: 'CONFIG_INVALID' });
   });
+
+  it('GET /state 允许另一端口的办公室页面读取', async () => {
+    const server = await startEventServer({
+      eventsPath: tempFile(),
+      host: '127.0.0.1',
+      port: 0,
+      pollMs: 50,
+    });
+    closers.push(() => server.close());
+
+    const preflight = await fetch(`${server.url}/state`, { method: 'OPTIONS' });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('access-control-allow-origin')).toBe('*');
+    expect(preflight.headers.get('access-control-allow-headers')).toContain('authorization');
+
+    const state = await fetch(`${server.url}/state`, {
+      headers: { origin: 'http://127.0.0.1:8789' },
+    });
+    expect(state.status).toBe(200);
+    expect(state.headers.get('access-control-allow-origin')).toBe('*');
+  });
 });
 
 function chunk(instance: string, seq: number, text: string): RelayEvent {

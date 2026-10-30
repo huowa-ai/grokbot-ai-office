@@ -7,6 +7,7 @@ import { parse } from 'yaml';
 
 import {
   ProvidersConfigError,
+  extractOfficeAppearances,
   loadProvidersConfig,
   parseProvidersConfig,
 } from '@grokbot-ai-office/registry';
@@ -144,6 +145,47 @@ describe('providersFileSchema', () => {
 
     expect(error.issues.some((issue) => issue.message.includes('密钥'))).toBe(true);
     expect(error.message).not.toMatch(/sk-/i);
+  });
+
+  it('office 形象块可选，非法 body 会校验失败', () => {
+    const config = parseProvidersConfig({
+      ...validFile,
+      providers: {
+        codex: {
+          auth: 'subscription',
+          command: ['codex', 'exec'],
+          safe_mode: '--sandbox read-only',
+          office: {
+            body: 'robot',
+            bezel: '#145c5c',
+            desk_prop: 'keyboard',
+            palette: { primary: '#0f3d3e' },
+          },
+        },
+      },
+    });
+
+    expect(extractOfficeAppearances(config).codex).toMatchObject({
+      body: 'robot',
+      bezel: '#145c5c',
+      desk_prop: 'keyboard',
+    });
+
+    const error = capture(() =>
+      parseProvidersConfig({
+        ...validFile,
+        providers: {
+          codex: {
+            auth: 'subscription',
+            command: ['codex', 'exec'],
+            safe_mode: '--sandbox read-only',
+            office: { body: 'logo' },
+          },
+        },
+      }),
+    );
+    expect(error).toBeInstanceOf(ProvidersConfigError);
+    expect(error.issues.some((issue) => issue.path.split('.').includes('body'))).toBe(true);
   });
 
   it('configs/providers.yaml 通过校验', () => {

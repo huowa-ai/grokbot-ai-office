@@ -8,6 +8,7 @@
   "files": {
     "ignore": [
       "**/dist/**",
+      "**/dist-server/**",
       "**/node_modules/**",
       "**/coverage/**",
       "**/.turbo/**",

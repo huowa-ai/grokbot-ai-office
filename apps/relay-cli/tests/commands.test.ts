@@ -159,6 +159,41 @@ describe('ai-relay commands', () => {
     expect(stderr.some((line) => line.includes('CONFIG_INVALID'))).toBe(true);
   });
 
+  it('office 在没有页面时返回 CONFIG_INVALID', async () => {
+    const stderr: string[] = [];
+    const code = await run(
+      ['office'],
+      tempDir(),
+      { RELAY_OFFICE_DIST: tempDir() },
+      { stderr: (text) => stderr.push(text) },
+    );
+    expect(code).toBe(1);
+    expect(
+      stderr.some((line) => line.includes('CONFIG_INVALID') && line.includes('办公室页面')),
+    ).toBe(true);
+  });
+
+  it('office --demo 打印带演示查询的本机地址', async () => {
+    const root = tempDir();
+    writeFileSync(path.join(root, 'index.html'), '<p>办公室</p>');
+    const controller = new AbortController();
+    const stdout: string[] = [];
+    const code = await run(
+      ['office', '--port', '0', '--demo'],
+      tempDir(),
+      { RELAY_OFFICE_DIST: root },
+      {
+        stdout: (text) => {
+          stdout.push(text);
+          controller.abort();
+        },
+        signal: controller.signal,
+      },
+    );
+    expect(code).toBe(0);
+    expect(stdout[0]).toMatch(/^办公室已打开 http:\/\/127\.0\.0\.1:\d+\/\?demo=1$/);
+  });
+
   it('serve 在缺少令牌时拒绝监听 0.0.0.0', async () => {
     const stderr: string[] = [];
     const code = await run(

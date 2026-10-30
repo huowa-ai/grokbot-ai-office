@@ -216,6 +216,7 @@ export function usageText(): string {
     'ai-relay hook <事件> --instance <provider@host> [--summary 文本]',
     'ai-relay mcp',
     'ai-relay mcp --http [--host 127.0.0.1] [--port 8788]',
+    'ai-relay office [--port 8789] [--demo]',
   ].join('\n');
 }
 

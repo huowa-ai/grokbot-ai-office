@@ -10,6 +10,9 @@ providers:
     input: stdin
     safe_mode: "--sandbox read-only"
     # pty: true   # 可选。需要本机能加载 node-pty；失败时自动回到管道。
+    # office:     # 可选，只影响 3D 办公室形象。见 docs/OFFICE.md
+    #   body: robot
+    #   bezel: "#14615f"
 
   codebuddy:
     auth: subscription

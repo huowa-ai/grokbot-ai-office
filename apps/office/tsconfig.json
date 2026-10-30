@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "three": ["node_modules/@types/three/index.d.ts"],
+      "three/addons/*": ["node_modules/@types/three/examples/jsm/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["src/server"]
+}

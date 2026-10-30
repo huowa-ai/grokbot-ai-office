@@ -183,6 +183,12 @@ export async function startEventServer(options: EventServerOptions): Promise<Eve
   });
 
   async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    applyCors(res);
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
     const url = requestUrl(req);
     if (!authorized(req, token)) {
       sendJson(res, 401, { ok: false, error: 'UNAUTHORIZED' });
@@ -279,6 +285,13 @@ export async function startEventServer(options: EventServerOptions): Promise<Eve
       });
     },
   };
+}
+
+function applyCors(res: ServerResponse): void {
+  res.setHeader('access-control-allow-origin', '*');
+  res.setHeader('access-control-allow-headers', 'authorization, content-type');
+  res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
+  res.setHeader('access-control-max-age', '600');
 }
 
 function authorized(req: IncomingMessage, token: string | undefined): boolean {

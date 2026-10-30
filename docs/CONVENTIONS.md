@@ -26,7 +26,8 @@ grokbot-ai-office/
 │   ├── relay-cli/         # ai-relay 命令
 │   ├── event-server/      # 事件尾随与 WebSocket
 │   ├── mcp-server/        # MCP 入站适配器
-│   └── office-web/        # 虚拟办公室界面（后续）
+│   ├── office/            # 3D 办公室，只读事件流
+│   └── office-web/        # 只读状态占位
 ├── configs/
 │   └── providers.yaml     # AI 注册表
 ├── scripts/               # install、login、selfcheck
@@ -91,7 +92,7 @@ packages/adapters/src/
 ```
 
 - 类型：`feat`、`fix`、`docs`、`refactor`、`test`、`chore`、`ci`、`perf`。
-- 范围用包名：`core`、`adapters`、`registry`、`events`、`relay-cli`、`mcp-server`、`office-web`、`configs`。
+- 范围用包名：`core`、`adapters`、`registry`、`events`、`relay-cli`、`mcp-server`、`office`、`office-web`、`configs`。
 - 不兼容改动加 `!` 或脚注 `BREAKING CHANGE:`。
 - 示例：`feat(adapters): 新增 openai-compatible 通用适配器`。
 
@@ -144,6 +145,8 @@ semantic-release 据此自动决定版本号：`fix` 升补丁号，`feat` 升�
    RELAY_MCP_PORT=
    RELAY_STATE_CHUNK_LIMIT=
    RELAY_HOOK_INSTANCE=
+   RELAY_OFFICE_PORT=
+   RELAY_OFFICE_DIST=
    ```
 
 3. 不在 issue、PR、聊天、日志中粘贴密钥。同一台机器上的 agent 共用 `RELAY_WORKSPACE`，默认是 `~/.grokbot-ai-office/workspace`。不要把密钥放进该目录。

@@ -1,0 +1,9 @@
+{
+  "hosts": {
+    "mac": "本地",
+    "local": "本地",
+    "cloud": "云端"
+  },
+  "providers": {},
+  "instances": {}
+}

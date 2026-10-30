@@ -24,7 +24,7 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 
 ```
 ┌────────────────────────────────────────────────┐
-│ relay-cli       mcp-server       office-web    │  应用层：入口与界面
+│ relay-cli    mcp-server    event-server    office │  应用层：入口与界面
 └───────┬──────────────┬──────────────┬──────────┘
         │ 调用          │ ask 调用      │ 只读事件
 ┌───────▼──────────────▼──────────────┐
@@ -51,7 +51,8 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 | `apps/relay-cli` | 命令行入口 `ai-relay` | 不含中转逻辑，只组装依赖并调用 core |
 | `apps/mcp-server` | MCP 入站适配器。`ask` 调用 `relay()`，并读事件快照 | 不接受命令参数，不按调用方的字符串起进程 |
 | `apps/event-server` | 尾随事件日志，用 WebSocket 推送，提供 `GET /state` 和 `POST /hook` | 不调用 AI |
-| `apps/office-web` | 将来的虚拟办公室界面 | 不调用 AI，只读事件 |
+| `apps/office` | 3D 办公室。只读 `GET /state` 和 WebSocket `/events` | 不调用 AI，不读密钥 |
+| `apps/office-web` | 只读状态占位 | 不调用 AI |
 
 ### 2.2 依赖方向（强制）
 
@@ -259,7 +260,7 @@ ai-relay approval list
 
 `ai-relay serve` 或 `pnpm serve` 启动 `apps/event-server`。它尾随事件文件，把新事件从 WebSocket `/events` 推出去。`GET /state` 返回每个 `provider@host` 的当前状态、任务预览、最近若干块输出和 `terminalTail`。
 
-默认只监听 `127.0.0.1:8787`。可用 `RELAY_SERVER_HOST` 和 `RELAY_SERVER_PORT` 改地址。绑到其他地址时必须设置 `RELAY_SERVER_TOKEN`。令牌一旦设置，本机请求也要带 `Authorization: Bearer <token>`，WebSocket 可以用 `?token=`。
+默认只监听 `127.0.0.1:8787`。可用 `RELAY_SERVER_HOST` 和 `RELAY_SERVER_PORT` 改地址。绑到其他地址时必须设置 `RELAY_SERVER_TOKEN`。令牌一旦设置，本机请求也要带 `Authorization: Bearer <token>`，WebSocket 可以用 `?token=`。`GET /state` 带跨域响应头，方便 `8789` 上的办公室页面读取。预检请求不返回数据。
 
 `POST /hook` 是这个服务上唯一会写日志的入口。它只追加状态事件，不能启动 AI。钩子配置见 [HOOKS.md](./HOOKS.md)。
 

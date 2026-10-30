@@ -34,7 +34,7 @@ flowchart TB
     cli[apps/relay-cli]
     mcp[apps/mcp-server]
     server[apps/event-server]
-    web[apps/office-web]
+    web[apps/office]
   end
   subgraph coreLayer [核心层]
     core[packages/core]
@@ -49,12 +49,12 @@ flowchart TB
   adapters -->|实现 AdapterPort| core
   registry -->|提供配置| cli
   events -->|实现 EventSink| core
-  web -->|只读事件| events
+  web -->|只读 /state 与 /events| server
   server -->|尾随并推送| events
   cli -->|serve| server
 ```
 
-应用层只组装依赖。`packages/core` 定义 `AdapterPort` 和 `EventSink`，不直接调用 CLI 或 HTTP。`apps/office-web` 只读 `packages/events`。
+应用层只组装依赖。`packages/core` 定义 `AdapterPort` 和 `EventSink`，不直接调用 CLI 或 HTTP。`apps/office` 只读事件服务，不调用 AI。
 
 ## 目录
 
@@ -83,6 +83,7 @@ grokbot-ai-office/
 │   ├── relay-cli/
 │   ├── event-server/
 │   ├── mcp-server/
+│   ├── office/
 │   └── office-web/
 ├── configs/providers.yaml
 ├── scripts/
@@ -126,6 +127,8 @@ ai-relay hook stop --instance claude@mac
 
 `ai-relay mcp` 把同一套中转暴露成 MCP 工具 `ask`、`list_agents`、`office_status`。`--http` 默认监听 `127.0.0.1:8788`。说明见 [docs/MCP.md](./docs/MCP.md)。
 
+`pnpm office` 在 `127.0.0.1:8789` 打开 3D 办公室。`pnpm office:demo` 不连接真实 AI。说明见 [docs/OFFICE.md](./docs/OFFICE.md)。
+
 `subscription` 可以加 `pty: true`，用伪终端保留颜色和光标。`node-pty` 加载失败时会退回管道。
 
 自检不进入 CI。它检查 CLI 是否存在、环境变量是否已设置、HTTP 端点是否可达，不会把密钥发出去，也不会把提示发给模型。
@@ -165,7 +168,8 @@ pnpm selfcheck deepseek
 2. **中转核心与接入适配器**。已完成，包括 DeepSeek、Kimi、GLM、Claude、Gemini 和 OpenAI 兼容接口。
 3. **实时事件**。已完成：JSONL、本机推送、交接、批准、伪终端和 CLI 钩子。
 4. **MCP 服务器**。已完成：`ai-relay mcp`。见 [docs/MCP.md](./docs/MCP.md)。
-5. 之后是 3D 办公室、老板视角、macOS 灵动岛和 npm 分发。细节在路线图里。
+5. **3D 办公室**。已完成：等距场景、实时终端和每个 AI 的形象。见 [docs/OFFICE.md](./docs/OFFICE.md)。
+6. 之后是老板视角、macOS 灵动岛和 npm 分发。细节在路线图里。
 
 ## 文档
 
@@ -174,5 +178,6 @@ pnpm selfcheck deepseek
 - 路线图：[docs/ROADMAP.md](./docs/ROADMAP.md)
 - CLI 钩子：[docs/HOOKS.md](./docs/HOOKS.md)
 - MCP 服务器：[docs/MCP.md](./docs/MCP.md)
+- 3D 办公室：[docs/OFFICE.md](./docs/OFFICE.md)
 - 工程规范：[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 - 贡献：[CONTRIBUTING.md](./CONTRIBUTING.md)
