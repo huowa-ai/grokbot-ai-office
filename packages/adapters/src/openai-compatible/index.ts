@@ -21,7 +21,7 @@ export function createOpenAiCompatibleAdapter(
         throw new RelayError('CONFIG_INVALID', `提供者 ${providerName} 缺少 base_url 或 model`);
       }
       const apiKey = readOptionalApiKey(config.key_env, env);
-      return postChatCompletions({
+      const text = await postChatCompletions({
         baseUrl: config.base_url,
         model: config.model,
         prompt: request.prompt,
@@ -29,6 +29,10 @@ export function createOpenAiCompatibleAdapter(
         signal,
         fetchImpl: runtime.fetchImpl,
       });
+      if (request.onOutputChunk && text.length > 0) {
+        await request.onOutputChunk(text);
+      }
+      return text;
     },
     async selfcheck() {
       if (typeof config.key_env === 'string' && config.key_env.length > 0) {

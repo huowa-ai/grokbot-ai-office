@@ -32,6 +32,7 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 flowchart TB
   subgraph appLayer [应用层]
     cli[apps/relay-cli]
+    server[apps/event-server]
     web[apps/office-web]
   end
   subgraph coreLayer [核心层]
@@ -47,6 +48,8 @@ flowchart TB
   registry -->|提供配置| cli
   events -->|实现 EventSink| core
   web -->|只读事件| events
+  server -->|尾随并推送| events
+  cli -->|serve| server
 ```
 
 应用层只组装依赖。`packages/core` 定义 `AdapterPort` 和 `EventSink`，不直接调用 CLI 或 HTTP。`apps/office-web` 只读 `packages/events`。
@@ -76,6 +79,7 @@ grokbot-ai-office/
 │   └── events/
 ├── apps/
 │   ├── relay-cli/
+│   ├── event-server/
 │   └── office-web/
 ├── configs/providers.yaml
 ├── scripts/
@@ -104,6 +108,21 @@ echo "你好" | pnpm relay ollama-local
 
 订阅方式的命令在 `RELAY_WORKSPACE` 里执行，默认是 `~/.grokbot-ai-office/workspace`。目录里会有 `shared/`、`agents/<provider>/` 和 `outbox/`。
 
+事件默认追加到 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 改路径。提示只留短预览，输出按段记录，疑似密钥会先打码。
+
+```bash
+pnpm serve
+ai-relay handoff codex@mac kimi@cloud ./notes.txt 请继续
+ai-relay approval request claude@mac "允许读取仓库"
+ai-relay approval list
+ai-relay approval resolve <id> false
+ai-relay hook stop --instance claude@mac
+```
+
+`pnpm serve` 就是 `ai-relay serve`。它只监听 `127.0.0.1:8787`，通过 WebSocket `/events` 推送新事件，并用 `GET /state` 给后加入的客户端一份快照。绑到其他地址时必须设置 `RELAY_SERVER_TOKEN`。`POST /hook` 只追加状态，不会运行 AI。钩子配置见 [docs/HOOKS.md](./docs/HOOKS.md)。
+
+`subscription` 可以加 `pty: true`，用伪终端保留颜色和光标。`node-pty` 加载失败时会退回管道。
+
 自检不进入 CI。它检查 CLI 是否存在、环境变量是否已设置、HTTP 端点是否可达，不会把密钥发出去，也不会把提示发给模型。
 
 ```bash
@@ -128,21 +147,25 @@ pnpm selfcheck deepseek
 - `key_env` 只能是全大写加下划线的变量名，不能写成密钥。
 - 配置里出现以 `sk-` 开头的疑似密钥时，校验会直接失败。
 - 每个 `subscription` 提供者都必须声明 `safe_mode`。
-- 事件默认写到 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 改路径。事件不记录提示原文和回答原文。
+- 事件默认写到 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 改路径。默认不记录完整提示，只留短预览和有长度上限的输出分段，并打码疑似密钥。
 - 同一台机器上的 agent 共用 `RELAY_WORKSPACE`，默认是 `~/.grokbot-ai-office/workspace`。该目录不得存放密钥，`.gitignore` 会排除 `workspace/`。
 - `RELAY_HOST` 区分机器，例如 `mac` 和 `cloud`。对外标识是 `provider@host`，如 `codex@mac`。注册表仍按 AI 名字共享。
 - 不要提交 `.env`、CLI 登录文件、事件日志或工作目录。
 
 ## 路线图
 
-1. **骨架**：仓库结构、设计规范、注册表校验和错误码。已完成。
-2. **中转核心与适配器**：接通 CLI、官方 API、OpenAI 兼容三种调用。当前阶段完成这一步。事件槽已经接上，JSONL 落盘留在下一步。
-3. **状态事件与切换 bot**：把事件写入 JSONL，并在群聊里切换不同的 AI。
-4. **虚拟办公室界面**：`apps/office-web` 只读事件，把每个 AI 显示为一个角色。
+完整计划见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
+
+1. **骨架**。已完成。
+2. **中转核心与接入适配器**。已完成，包括 DeepSeek、Kimi、GLM、Claude、Gemini 和 OpenAI 兼容接口。
+3. **实时事件**。当前阶段：JSONL、本机推送、交接、批准、伪终端和 CLI 钩子。
+4. 之后是 MCP 服务器、3D 办公室、老板视角、macOS 灵动岛和 npm 分发。细节在路线图里。
 
 ## 文档
 
 - 给 AI 编码助手的说明：[AGENTS.md](./AGENTS.md)
 - 架构：[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- 路线图：[docs/ROADMAP.md](./docs/ROADMAP.md)
+- CLI 钩子：[docs/HOOKS.md](./docs/HOOKS.md)
 - 工程规范：[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 - 贡献：[CONTRIBUTING.md](./CONTRIBUTING.md)

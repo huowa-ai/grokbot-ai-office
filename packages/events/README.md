@@ -1,18 +1,20 @@
 # @grokbot-ai-office/events
 
-状态事件的类型和路径。本包不做中转判断。`relay()` 已经会把 `started`、`replying_to`、`done`、`error` 交给注入的事件槽；把 JSONL 写到磁盘留在下一步，避免现在就产生事件日志。
+把 `core` 定义的事件追加到 JSONL，并提供读取。本包不做中转判断，也不调用 AI。
 
 ## 公开 API
 
-- `EVENT_TYPES`：`started`、`replying_to`、`done`、`error`。
-- `StatusEvent`：事件结构。每条都有 `host`。不含提示原文和回答原文。
+- `EVENT_TYPES`：`started`、`replying_to`、`done`、`error`、`output_chunk`、`status`。
+- `relayEventSchema`、`RelayEvent`：从 core 重新导出。
+- `createJsonlEventSink(file)`：校验、打码，然后追加一行。同一进程内的写入会排队。
+- `readEvents(file)`：读回合法事件，跳过坏行。文件不存在时返回空数组。
 - `defaultEventsPath()`：默认 `~/.grokbot-ai-office/events.jsonl`。
 - `resolveEventsPath(env)`：优先使用 `RELAY_EVENTS_PATH`。
 
 ## 示例
 
 ```ts
-import { resolveEventsPath } from '@grokbot-ai-office/events';
+import { createJsonlEventSink, resolveEventsPath } from '@grokbot-ai-office/events';
 
-const file = resolveEventsPath(process.env);
+const sink = createJsonlEventSink(resolveEventsPath(process.env));
 ```

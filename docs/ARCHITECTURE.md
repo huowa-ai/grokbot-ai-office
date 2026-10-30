@@ -47,8 +47,9 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 | `packages/core` | 接收提示，按注册表选适配器，执行调用，处理超时与错误，发出事件；定义 `AdapterPort`、`EventSink` 接口 | 不直接调用任何 CLI 或 HTTP |
 | `packages/adapters` | 每个 AI 或每类接入方式一个适配器，实现 `AdapterPort` | 不读其他适配器，不写事件文件 |
 | `packages/registry` | 读取并校验 `configs/providers.yaml`，返回类型化配置 | 不读取密钥的值，只记录变量名 |
-| `packages/events` | 定义事件结构，写入 JSONL 日志，提供读取/订阅 | 不含业务判断 |
-| `apps/relay-cli` | 命令行入口 `ai-relay <名字> <提示>` | 不含中转逻辑，只组装依赖并调用 core |
+| `packages/events` | 把 `core` 里的事件写入 JSONL，并提供读取 | 不含业务判断，不调用 AI |
+| `apps/relay-cli` | 命令行入口 `ai-relay` | 不含中转逻辑，只组装依赖并调用 core |
+| `apps/event-server` | 尾随事件日志，用 WebSocket 推送，提供 `GET /state` 和 `POST /hook` | 不调用 AI |
 | `apps/office-web` | 将来的虚拟办公室界面 | 不调用 AI，只读事件 |
 
 ### 2.2 依赖方向（强制）
@@ -56,7 +57,7 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 1. `apps → core`，应用层只依赖核心层的公开 API。
 2. `core` 只依赖自己定义的接口；适配器、注册表、事件由应用层在启动时注入（依赖倒置）。（参考：domain-driven-hexagon，“Dependency rule”）
 3. 适配器实现 `core` 中的 `AdapterPort`，**任何适配器不得导入另一个适配器**。
-4. `office-web` 只依赖 `packages/events` 的读取接口，不依赖 `core` 和 `adapters`。
+4. `office-web` 只依赖 `packages/events` 的读取接口，不依赖 `core` 和 `adapters`。`event-server` 也只读事件日志；唯一的写入是 `POST /hook`，它只追加状态，不运行 AI。
 5. 禁止循环依赖，CI 中用依赖检查（如 `dependency-cruiser` 或 eslint `import/no-restricted-paths`）强制。
 
 ### 2.3 包内结构
@@ -186,21 +187,84 @@ providers:
 
 ## 5. 状态事件
 
-事件写入 JSONL，一行一个事件，默认路径 `~/.grokbot-ai-office/events.jsonl`（可用 `RELAY_EVENTS_PATH` 覆盖）。
+事件写入 JSONL，一行一个事件。默认路径是 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 覆盖。结构由 `packages/core` 的 zod schema 定义，版本号是 `v: 1`。现在还没有对外发布过事件，所以本阶段新增的类型仍使用 `v: 1`。以后再增加类型时升版本。
+
+每条事件都有这些字段：
+
+| 字段 | 含义 |
+| --- | --- |
+| `v` | 固定为 `1` |
+| `id` | 事件 id |
+| `ts` | ISO 8601 时间 |
+| `type` | 事件类型 |
+| `instance` | `provider@host`。未设置 `RELAY_HOST` 时只有提供者名字 |
+| `provider` | 注册表里的名字 |
+| `host` | 当时的 `RELAY_HOST`，未设置时为空字符串 |
+| `taskId` | 可选。同一次调用或同一次交接的关联 id |
+| `payload` | 跟 `type` 有关的内容 |
+
+类型有六种：`started`、`replying_to`、`done`、`error`、`output_chunk`、`status`。
 
 ```json
-{"v":1,"id":"01J9Z…","ts":"2026-10-30T14:20:00+08:00","provider":"codex","host":"mac","type":"started","requestId":"r_123"}
-{"v":1,"id":"01J9Z…","ts":"2026-10-30T14:20:00+08:00","provider":"codex","host":"mac","type":"replying_to","requestId":"r_123","replyTo":"huowa"}
-{"v":1,"id":"01J9Z…","ts":"2026-10-30T14:20:41+08:00","provider":"codex","host":"mac","type":"done","requestId":"r_123","durationMs":41000}
-{"v":1,"id":"01J9Z…","ts":"2026-10-30T14:21:05+08:00","provider":"deepseek","host":"cloud","type":"error","requestId":"r_124","error":{"code":"AUTH_MISSING","message":"DEEPSEEK_API_KEY 未设置"}}
+{"v":1,"id":"8f0c","ts":"2026-10-30T08:00:00.000Z","type":"started","instance":"codex@mac","provider":"codex","host":"mac","taskId":"r_123","payload":{"promptPreview":"用一句话介绍…"}}
+{"v":1,"id":"8f0d","ts":"2026-10-30T08:00:00.100Z","type":"status","instance":"codex@mac","provider":"codex","host":"mac","taskId":"r_123","payload":{"state":"working","source":"lifecycle","taskPreview":"用一句话介绍…"}}
+{"v":1,"id":"8f0e","ts":"2026-10-30T08:00:00.100Z","type":"replying_to","instance":"codex@mac","provider":"codex","host":"mac","taskId":"r_123","payload":{"replyTo":"huowa"}}
+{"v":1,"id":"8f0f","ts":"2026-10-30T08:00:01.000Z","type":"output_chunk","instance":"codex@mac","provider":"codex","host":"mac","taskId":"r_123","payload":{"seq":1,"text":"部分输出"}}
+{"v":1,"id":"8f10","ts":"2026-10-30T08:00:41.000Z","type":"done","instance":"codex@mac","provider":"codex","host":"mac","taskId":"r_123","payload":{"durationMs":41000}}
+{"v":1,"id":"8f11","ts":"2026-10-30T08:00:41.000Z","type":"status","instance":"codex@mac","provider":"codex","host":"mac","taskId":"r_123","payload":{"state":"idle","source":"lifecycle"}}
+{"v":1,"id":"8f12","ts":"2026-10-30T08:01:05.000Z","type":"error","instance":"deepseek@cloud","provider":"deepseek","host":"cloud","taskId":"r_124","payload":{"code":"AUTH_MISSING","message":"DEEPSEEK_API_KEY 未设置","durationMs":10}}
+{"v":1,"id":"8f13","ts":"2026-10-30T08:01:05.000Z","type":"status","instance":"deepseek@cloud","provider":"deepseek","host":"cloud","taskId":"r_124","payload":{"state":"stuck","source":"lifecycle","code":"AUTH_MISSING","reason":"DEEPSEEK_API_KEY 未设置"}}
 ```
+
+`status.payload.state` 只能是 `idle`、`working`、`stuck`、`waiting_approval`、`handoff`。
+
+- `stuck` 带 `code`（`RelayError` 错误码）和短 `reason`，并可以带终端尾部 `tail`。
+- `waiting_approval` 带 `approvalId` 和 `summary`。
+- `handoff` 带 `from`、`to` 和 `filePath`。`filePath` 是 `RELAY_WORKSPACE` 下的 `outbox/<to>/...`。
+- `source` 是 `lifecycle`、`heuristic` 或 `hook`。钩子写来的状态优先于输出启发式。启发式只会把 `working` 推到 `waiting_approval`。一次调用以 `idle` 或 `stuck` 结束时，钩子锁定解除。
 
 规则：
 
-- 类型只有 `started`、`replying_to`、`done`、`error` 四种；新增类型需升 `v`。
-- 每条事件都带 `host`，取值是当时的 `RELAY_HOST`。未设置时为空字符串。这仍是 `v: 1`，因为还没有任何已发布的事件。
-- 事件不包含提示原文和回答原文，只含元数据，避免泄露。
-- 只追加，不修改；界面按 `requestId` 聚合。
+- 找到提供者之后才写事件。名字不存在、主机不一致时直接返回错误，不写事件。
+- 一次成功调用的顺序是 `started`、`status working`、可选的 `replying_to`、若干 `output_chunk`、`done`、`status idle`。失败则在最后写 `error` 和 `status stuck`。
+- `started.payload.promptPreview` 默认只保留提示的前 80 个字符，可用 `RELAY_PROMPT_PREVIEW_CHARS` 调整，最大 500。设为 `0` 则不记录预览。事件里不放完整提示。
+- `output_chunk` 有从 1 开始的 `seq`。每段最多 1024 个字符，并且不超过 1024 字节。CLI 适配器按标准输出到达的顺序推送。HTTP 适配器通常把整段回答作为一块或数块推送。返回给调用方的最终回答仍是完整文本，不受分段影响。
+- 疑似密钥在写入前替换成 `[REDACTED]`。
+- 只追加，不修改。同一进程里的写入会排队；每次写入都是带换行的一整行。
+- 最近 8192 字节的输出留在内存环里。失败时放进 `error` 和 `stuck` 的 `tail`。`GET /state` 的 `terminalTail` 给后加入的界面重放屏幕。
+
+### 5.1 伪终端
+
+`subscription` 可以写 `pty: true`。这时用 `node-pty` 跑命令，颜色和光标序列原样进入 `output_chunk`，留给第 4 步的 xterm.js。没写 `pty` 时仍用管道。`node-pty` 是可选依赖；加载失败就打一行日志并退回管道，不让这次调用失败。
+
+超时、中止或进程退出时，结束整个进程组（POSIX 上对进程组发信号），而不只结束直接子进程。
+
+### 5.2 交接与批准
+
+`handoff(from, to, filePath, note)` 把文件复制到 `outbox/<to>/`，并写一条 `handoff` 状态。复制而不是做符号链接，这样源文件稍后被删，收件方仍留着副本。
+
+`requestApproval(instance, summary)` 写 `waiting_approval`。`resolveApproval(id, approved)` 写回 `idle`，并带上 `approvalId` 和 `approved`。拒绝也记成 `idle`，避免和调用失败的 `stuck` 混在一起。
+
+命令行：
+
+```bash
+ai-relay handoff codex@mac kimi@cloud ./notes.txt 请继续
+ai-relay approval request claude@mac "允许读取仓库"
+ai-relay approval resolve appr_123 false
+ai-relay approval list
+```
+
+### 5.3 实时推送
+
+`ai-relay serve` 或 `pnpm serve` 启动 `apps/event-server`。它尾随事件文件，把新事件从 WebSocket `/events` 推出去。`GET /state` 返回每个 `provider@host` 的当前状态、任务预览、最近若干块输出和 `terminalTail`。
+
+默认只监听 `127.0.0.1:8787`。可用 `RELAY_SERVER_HOST` 和 `RELAY_SERVER_PORT` 改地址。绑到其他地址时必须设置 `RELAY_SERVER_TOKEN`。令牌一旦设置，本机请求也要带 `Authorization: Bearer <token>`，WebSocket 可以用 `?token=`。
+
+`POST /hook` 是这个服务上唯一会写日志的入口。它只追加状态事件，不能启动 AI。钩子配置见 [HOOKS.md](./HOOKS.md)。
+
+### 5.4 命令行钩子
+
+`ai-relay hook <事件> --instance <provider@host>` 给 Claude Code 这类 CLI 用。成功时标准输出保持空白，避免干扰对方自己的钩子协议。事件名会映射成上面的状态，例如 `UserPromptSubmit` 和 `PreToolUse` 是 `working`，`PermissionRequest` 是 `waiting_approval`，`Stop` 是 `idle`。没有钩子的 CLI 仍靠输出里的批准语句做启发式判断。
 
 ## 6. 共享工作目录
 
@@ -224,7 +288,7 @@ providers:
 
 - `shared/` 放所有 agent 都能读写的公共文件。
 - `agents/<provider>/` 放该 AI 自己的草稿。`<provider>` 使用注册表中的名字，例如 `codex`。
-- `outbox/` 放准备交付的结果。
+- `outbox/` 放准备交付的结果。`ai-relay handoff` 会把文件复制到 `outbox/<收件实例>/`。
 
 状态事件默认仍写到 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 覆盖。事件文件和工作目录都位于 `~/.grokbot-ai-office/` 下，事件不写入 `workspace/`。
 
@@ -277,17 +341,17 @@ codex:
 2. 错误码固定：`PROVIDER_NOT_FOUND`、`CONFIG_INVALID`、`AUTH_MISSING`、`AUTH_EXPIRED`、`TIMEOUT`、`CLI_NOT_INSTALLED`、`CLI_EXIT_NONZERO`、`HTTP_ERROR`、`EMPTY_RESPONSE`。
 3. 运行时可预期的错误（超时、未登录）返回给调用方并写事件；程序错误（bug）直接抛出并退出非零码。
 4. 永不吞错误，永不用默认文本冒充回答。
-5. CLI 适配器保留 stderr 前 2000 字符作为 `cause`，但须先过滤疑似密钥。
+5. CLI 适配器保留 stderr 前 2000 字符作为 `cause`，但须先过滤疑似密钥。失败事件里的 `tail` 同样先过滤。
 
 ## 9. 安全
 
 - 密钥只放在 `.env` 或系统环境变量，永不写进仓库、配置文件或聊天。
 - `.env.example` 只列变量名，值留空。
 - 每个 `subscription` 提供者必须声明只读或安全模式参数。
-- 日志与事件中不记录密钥、提示原文。
+- 日志与事件中不记录密钥，也不记录完整提示。提示只留可配置的短预览，输出只留有长度上限的分段。
 - 共享工作目录（见第 6 节）不得写入密钥，并且不要提交。
 - （参考：elsewhencode/project-guidelines“环境变量”一节；github/gitignore）
 
 ## 10. 虚拟办公室界面（后续）
 
-`apps/office-web` 采用 bulletproof-react 的按功能分目录方式（`src/features/<功能>/`），通过读取事件日志（或后续的 SSE 接口）把每个 `provider@host` 显示为一个角色。例如 `codex@mac` 和 `codex@cloud` 是两个角色。界面不得调用 AI、不得读取密钥。（参考：alan2207/bulletproof-react `docs/project-structure.md`）
+`apps/office-web` 采用 bulletproof-react 的按功能分目录方式（`src/features/<功能>/`）。第 4 步会通过 `GET /state` 和 WebSocket `/events` 把每个 `provider@host` 显示为一个角色，并用 `terminalTail` 重放屏幕。例如 `codex@mac` 和 `codex@cloud` 是两个角色。界面不得调用 AI、不得读取密钥。（参考：alan2207/bulletproof-react `docs/project-structure.md`）

@@ -35,6 +35,7 @@ const subscriptionProviderSchema = z
     input: z.enum(['stdin', 'arg', 'file']).optional(),
     safe_mode: z.string().refine((value) => value.trim().length > 0, 'safe_mode 不能为空'),
     output_filter: z.string().optional(),
+    pty: z.boolean().optional(),
     hosts: hostsSchema,
   })
   .strict();

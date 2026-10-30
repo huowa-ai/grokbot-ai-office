@@ -1,0 +1,29 @@
+{
+  "name": "@grokbot-ai-office/event-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "只读事件推送。尾随 JSONL，经 WebSocket 推送，并提供当前状态。不调用 AI。",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts apps/event-server/tests"
+  },
+  "dependencies": {
+    "@grokbot-ai-office/core": "workspace:*",
+    "@grokbot-ai-office/events": "workspace:*",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}

@@ -1,4 +1,4 @@
-import { type AdapterPort, RelayError } from '@grokbot-ai-office/core';
+import { type AdapterPort, RelayError, type RelayRequest } from '@grokbot-ai-office/core';
 
 import { postAnthropicMessage } from '../http/anthropic.js';
 import {
@@ -31,31 +31,40 @@ export function createOfficialAdapter(
           if (vendor.baseUrl === undefined) {
             throw new RelayError('CONFIG_INVALID', `尚未支持 vendor：${vendor.id}`);
           }
-          return postChatCompletions({
-            baseUrl: vendor.baseUrl,
-            model,
-            prompt: request.prompt,
-            apiKey,
-            signal,
-            fetchImpl: runtime.fetchImpl,
-          });
+          return emitAnswer(
+            request,
+            await postChatCompletions({
+              baseUrl: vendor.baseUrl,
+              model,
+              prompt: request.prompt,
+              apiKey,
+              signal,
+              fetchImpl: runtime.fetchImpl,
+            }),
+          );
         }
         case 'anthropic-messages':
-          return postAnthropicMessage({
-            model,
-            prompt: request.prompt,
-            apiKey,
-            signal,
-            fetchImpl: runtime.fetchImpl,
-          });
+          return emitAnswer(
+            request,
+            await postAnthropicMessage({
+              model,
+              prompt: request.prompt,
+              apiKey,
+              signal,
+              fetchImpl: runtime.fetchImpl,
+            }),
+          );
         case 'gemini-generate':
-          return postGeminiGenerate({
-            model,
-            prompt: request.prompt,
-            apiKey,
-            signal,
-            fetchImpl: runtime.fetchImpl,
-          });
+          return emitAnswer(
+            request,
+            await postGeminiGenerate({
+              model,
+              prompt: request.prompt,
+              apiKey,
+              signal,
+              fetchImpl: runtime.fetchImpl,
+            }),
+          );
         default: {
           const unexpected: never = vendor.style;
           throw new RelayError('CONFIG_INVALID', `尚未支持 vendor：${String(unexpected)}`, {
@@ -95,6 +104,13 @@ function resolveVendor(vendorName: string | undefined, providerName: string): Ve
     throw new RelayError('CONFIG_INVALID', `尚未支持 vendor：${vendorName}`);
   }
   return vendor;
+}
+
+async function emitAnswer(request: RelayRequest, text: string): Promise<string> {
+  if (request.onOutputChunk && text.length > 0) {
+    await request.onOutputChunk(text);
+  }
+  return text;
 }
 
 function resolveKeyEnv(config: ApiKeyConfig, vendor: VendorDefinition): string {

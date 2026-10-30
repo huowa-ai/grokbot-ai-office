@@ -17,7 +17,18 @@ echo "你好" | pnpm relay ollama-local
 
 启动时会读取当前目录的 `.env`，但不会覆盖已经存在的环境变量。密钥不会打印出来。
 
-事件槽目前是空操作。`started`、`replying_to`、`done`、`error` 的调用点已经留好，JSONL 落盘是下一步。
+调用会把事件追加到 `RELAY_EVENTS_PATH`，默认是 `~/.grokbot-ai-office/events.jsonl`。
+
+```bash
+ai-relay serve
+ai-relay handoff codex@mac kimi@cloud ./notes.txt 请继续
+ai-relay approval request claude@mac "允许读取仓库"
+ai-relay approval resolve <id> true
+ai-relay approval list
+ai-relay hook stop --instance claude@mac
+```
+
+`serve`、`handoff`、`approval`、`hook` 是保留的子命令，不能当作提供者名字。`hook` 成功时不打印标准输出，方便接到 Claude Code 的钩子里。详见 `docs/HOOKS.md`。
 
 ## 自检
 

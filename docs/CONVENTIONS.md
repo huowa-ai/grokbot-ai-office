@@ -24,6 +24,7 @@ grokbot-ai-office/
 │   └── events/            # 状态事件
 ├── apps/
 │   ├── relay-cli/         # ai-relay 命令
+│   ├── event-server/      # 事件尾随与 WebSocket
 │   └── office-web/        # 虚拟办公室界面（后续）
 ├── configs/
 │   └── providers.yaml     # AI 注册表
@@ -134,6 +135,13 @@ semantic-release 据此自动决定版本号：`fix` 升补丁号，`feat` 升�
    RELAY_EVENTS_PATH=
    RELAY_WORKSPACE=
    RELAY_HOST=
+   RELAY_PROMPT_PREVIEW_CHARS=
+   RELAY_OUTPUT_CHUNK_CHARS=
+   RELAY_SERVER_HOST=
+   RELAY_SERVER_PORT=
+   RELAY_SERVER_TOKEN=
+   RELAY_STATE_CHUNK_LIMIT=
+   RELAY_HOOK_INSTANCE=
    ```
 
 3. 不在 issue、PR、聊天、日志中粘贴密钥。同一台机器上的 agent 共用 `RELAY_WORKSPACE`，默认是 `~/.grokbot-ai-office/workspace`。不要把密钥放进该目录。

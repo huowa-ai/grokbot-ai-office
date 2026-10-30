@@ -32,6 +32,7 @@ Implemented official vendors are DeepSeek, Kimi, GLM, Anthropic (Claude), and Ge
 flowchart TB
   subgraph appLayer [Apps]
     cli[apps/relay-cli]
+    server[apps/event-server]
     web[apps/office-web]
   end
   subgraph coreLayer [Core]
@@ -47,6 +48,8 @@ flowchart TB
   registry -->|supply config| cli
   events -->|implement EventSink| core
   web -->|read events| events
+  server -->|tail and push| events
+  cli -->|serve| server
 ```
 
 Apps wire dependencies. `packages/core` defines `AdapterPort` and `EventSink` and does not call a CLI or HTTP API itself. `apps/office-web` only reads `packages/events`.
@@ -76,6 +79,7 @@ grokbot-ai-office/
 │   └── events/
 ├── apps/
 │   ├── relay-cli/
+│   ├── event-server/
 │   └── office-web/
 ├── configs/providers.yaml
 ├── scripts/
@@ -104,6 +108,21 @@ echo "hello" | pnpm relay ollama-local
 
 Subscription commands run inside `RELAY_WORKSPACE`, which defaults to `~/.grokbot-ai-office/workspace`. The directory contains `shared/`, `agents/<provider>/`, and `outbox/`.
 
+Events append to `~/.grokbot-ai-office/events.jsonl`. Override the path with `RELAY_EVENTS_PATH`. Prompts are stored as a short preview, output is stored in capped chunks, and likely secrets are redacted first.
+
+```bash
+pnpm serve
+ai-relay handoff codex@mac kimi@cloud ./notes.txt please continue
+ai-relay approval request claude@mac "allow reading the repo"
+ai-relay approval list
+ai-relay approval resolve <id> false
+ai-relay hook stop --instance claude@mac
+```
+
+`pnpm serve` is `ai-relay serve`. It binds to `127.0.0.1:8787`, pushes new events on WebSocket `/events`, and serves `GET /state` for late joiners. Binding any other address requires `RELAY_SERVER_TOKEN`. `POST /hook` only appends status. It does not run an AI. Hook setup is in [docs/HOOKS.en.md](./docs/HOOKS.en.md).
+
+A `subscription` provider may set `pty: true` to keep colors and cursor movement. If `node-pty` fails to load, the call falls back to pipes.
+
 Self-check is not part of CI. It checks that the CLI exists, that the environment variable is set, and that the HTTP endpoint is reachable. It does not send the API key or the prompt.
 
 ```bash
@@ -128,21 +147,25 @@ Add adapter code only when none of the three methods can cover the provider.
 - `key_env` must be an `UPPER_SNAKE` variable name, not a secret.
 - A string that looks like a secret (it starts with `sk-`) fails validation.
 - Every `subscription` provider must set `safe_mode`.
-- Events default to `~/.grokbot-ai-office/events.jsonl`. Override the path with `RELAY_EVENTS_PATH`. Events do not store the prompt or the answer.
+- Events default to `~/.grokbot-ai-office/events.jsonl`. Override the path with `RELAY_EVENTS_PATH`. The full prompt is not stored. Events keep a short preview and capped output chunks, with likely secrets redacted.
 - Agents on one machine share `RELAY_WORKSPACE`, which defaults to `~/.grokbot-ai-office/workspace`. That directory must not hold secrets, and `.gitignore` excludes `workspace/`.
 - `RELAY_HOST` names the machine, for example `mac` or `cloud`. The external id is `provider@host`, such as `codex@mac`. The registry stays shared per AI name.
 - Do not commit `.env`, CLI login files, event logs, or the workspace.
 
 ## Roadmap
 
-1. **Skeleton**: repository layout, design docs, registry validation, and error codes. Done.
-2. **Relay core and adapters**: real CLI, official API, and OpenAI-compatible calls. This stage. The event sink is wired; writing JSONL is the next stage.
-3. **Events and switching bots**: append JSONL events and switch AIs inside the group chat.
-4. **Office UI**: `apps/office-web` reads events and shows each AI as a character.
+The full plan is in [docs/ROADMAP.en.md](./docs/ROADMAP.en.md).
+
+1. **Skeleton.** Done.
+2. **Relay core and adapters.** Done, including DeepSeek, Kimi, GLM, Claude, Gemini, and OpenAI-compatible endpoints.
+3. **Live events.** This stage: JSONL, a local push server, handoff, approval, PTY, and CLI hooks.
+4. Later: an MCP server, the 3D office, the boss view, a macOS Dynamic Island, and npm distribution. See the roadmap.
 
 ## Docs
 
 - Instructions for coding agents: [AGENTS.md](./AGENTS.md)
 - Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- Roadmap: [docs/ROADMAP.en.md](./docs/ROADMAP.en.md)
+- CLI hooks: [docs/HOOKS.en.md](./docs/HOOKS.en.md)
 - Engineering conventions: [docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
