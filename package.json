@@ -1,6 +1,7 @@
 {
   "name": "grokbot-ai-office",
   "version": "0.0.0",
+  "description": "grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种方式接入 Grok Bot 群聊，并在实时的虚拟办公室界面里看到每个 AI 在做什么。",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.9",

@@ -4,7 +4,12 @@
 
 ## 1. 项目目标
 
-grokbot-ai-office 是一个可复用的多 AI 中转层。它把任意 AI（Codex、CodeBuddy、Hermes、OpenClaw、DeepSeek、Claude、本地模型等）接入 Grok Bot 群聊，并为将来的“虚拟办公室”网页界面提供实时状态数据。
+grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种方式接入 Grok Bot 群聊，并在实时的虚拟办公室界面里看到每个 AI 在做什么。
+
+项目分两层：
+
+1. 中转层是底座。`ai-relay`、注册表、适配器和状态事件把 Codex、CodeBuddy、Hermes、OpenClaw、DeepSeek、Claude、本地模型等接入 Grok Bot 群聊，并记下每个 AI 正在做什么。
+2. 虚拟办公室界面是前端。它读取中转层的实时状态，展示每个 AI 正在做什么。
 
 设计目标：
 

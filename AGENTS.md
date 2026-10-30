@@ -4,7 +4,9 @@
 
 ## 项目
 
-可复用的多 AI 中转层：`ai-relay <名字> <提示>` 按 `configs/providers.yaml` 调用对应 AI，并写状态事件。架构见 `docs/ARCHITECTURE.md`，规范见 `docs/CONVENTIONS.md`。
+grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种方式接入 Grok Bot 群聊，并在实时的虚拟办公室界面里看到每个 AI 在做什么。
+
+中转层是底座：`ai-relay <名字> <提示>` 按 `configs/providers.yaml` 调用对应 AI，并写状态事件。虚拟办公室界面是前端，只读这些事件。架构见 `docs/ARCHITECTURE.md`，规范见 `docs/CONVENTIONS.md`。
 
 ## 环境与命令
 

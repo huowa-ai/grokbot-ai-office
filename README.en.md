@@ -2,7 +2,12 @@ Chinese: [README.md](./README.md)
 
 # grokbot-ai-office
 
-grokbot-ai-office is a reusable relay for many AIs. The command `ai-relay <name> <prompt>` calls the AI named in `configs/providers.yaml` and records status events on the local machine. A future virtual-office page only reads those events. It does not call an AI itself.
+grokbot-ai-office is a multi-AI collaborative office: any AI joins Grok Bot group chats the same way, and a live virtual-office UI shows what each AI is doing.
+
+The project has two layers:
+
+1. The relay layer is the foundation. `ai-relay`, the registry, adapters, and events connect any AI to the group chat and record what it is doing.
+2. The virtual-office UI is the front. It reads those events and shows each AI.
 
 Goals:
 
