@@ -16,10 +16,11 @@ coverage/
 *.pem
 *.key
 
-# CLI login files and event logs stay on the machine
+# CLI login files, event logs, and the shared workspace stay on the machine
 events.jsonl
 *.jsonl
 .grokbot-ai-office/
+workspace/
 
 # editor / os
 .DS_Store

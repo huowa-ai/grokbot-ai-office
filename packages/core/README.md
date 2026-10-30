@@ -6,7 +6,7 @@
 
 - `relay(request, dependencies)`：找不到提供者时返回 `PROVIDER_NOT_FOUND`。
 - `RelayError`：带 `code`、`message`、`cause`、`isOperational`。
-- `ERROR_CODES`：架构第 6 节规定的 9 个错误码。
+- `ERROR_CODES`：架构第 7 节规定的 9 个错误码。
 - `AdapterPort`、`EventSink`、`RelayRequest`、`RelayResult`。
 
 可预期错误通过 `RelayResult.error` 返回。未注入适配器这类程序错误会抛出 `isOperational: false` 的 `RelayError`。

@@ -112,7 +112,8 @@ Add adapter code only when none of the three methods can cover the provider.
 - A string that looks like a secret (it starts with `sk-`) fails validation.
 - Every `subscription` provider must set `safe_mode`.
 - Events default to `~/.grokbot-ai-office/events.jsonl`. Override the path with `RELAY_EVENTS_PATH`. Events do not store the prompt or the answer.
-- Do not commit `.env`, CLI login files, or event logs.
+- Agents on one machine share `RELAY_WORKSPACE`, which defaults to `~/.grokbot-ai-office/workspace`. That directory must not hold secrets, and `.gitignore` excludes `workspace/`.
+- Do not commit `.env`, CLI login files, event logs, or the workspace.
 
 ## Roadmap
 

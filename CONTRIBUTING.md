@@ -27,7 +27,7 @@
 
 1. 密钥只放在本机 `.env` 或环境变量里。
 2. `.env.example` 只保留变量名，值留空。
-3. 不要提交 `.env`、CLI 登录文件、`events.jsonl`。
+3. 不要提交 `.env`、CLI 登录文件、`events.jsonl` 或 `workspace/`。共享文件目录由 `RELAY_WORKSPACE` 指定。
 4. 不要在 issue、PR、聊天或日志里粘贴密钥。
 5. 新增 `subscription` 提供者时必须写上 `safe_mode`。
 

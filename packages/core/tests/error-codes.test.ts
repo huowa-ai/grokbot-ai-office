@@ -15,7 +15,7 @@ const ARCHITECTURE_CODES = [
 ] as const;
 
 describe('ERROR_CODES', () => {
-  it('错误码清单与架构第 6 节的 9 个代码一致', () => {
+  it('错误码清单与架构第 7 节的 9 个代码一致', () => {
     expect(ERROR_CODES).toHaveLength(9);
     expect([...ERROR_CODES]).toEqual([...ARCHITECTURE_CODES]);
     expect(new Set(ERROR_CODES).size).toBe(9);

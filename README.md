@@ -112,7 +112,8 @@ pnpm relay missing-bot "你好"
 - 配置里出现以 `sk-` 开头的疑似密钥时，校验会直接失败。
 - 每个 `subscription` 提供者都必须声明 `safe_mode`。
 - 事件默认写到 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 改路径。事件不记录提示原文和回答原文。
-- 不要提交 `.env`、CLI 登录文件或事件日志。
+- 同一台机器上的 agent 共用 `RELAY_WORKSPACE`，默认是 `~/.grokbot-ai-office/workspace`。该目录不得存放密钥，`.gitignore` 会排除 `workspace/`。
+- 不要提交 `.env`、CLI 登录文件、事件日志或工作目录。
 
 ## 路线图
 

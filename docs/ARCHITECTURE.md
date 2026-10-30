@@ -196,7 +196,43 @@ providers:
 - 事件不包含提示原文和回答原文，只含元数据，避免泄露。
 - 只追加，不修改；界面按 `requestId` 聚合。
 
-## 6. 错误处理
+## 6. 共享工作目录
+
+多个 agent 要交换文件时，使用同一套工作目录，而不是各自写到临时路径。路径只来自环境变量，不写入 `configs/providers.yaml`。
+
+### 6.1 同一台机器
+
+一台机器上的所有 agent 共用一个目录。目录由环境变量 `RELAY_WORKSPACE` 指定，默认是 `~/.grokbot-ai-office/workspace`。`ai-relay` 调用每个适配器时，都把当前工作目录设为这个路径。`subscription` 方式的 CLI 在该目录内执行；HTTP 适配器也可以在这里读写文件。
+
+建议布局：
+
+```
+~/.grokbot-ai-office/
+├── events.jsonl                 # 状态事件，默认路径不变
+└── workspace/                   # RELAY_WORKSPACE 的默认位置
+    ├── shared/                  # 公共文件
+    ├── agents/
+    │   └── <provider>/          # 某个 AI 的草稿，例如 agents/codex/
+    └── outbox/                  # 待交付的结果
+```
+
+- `shared/` 放所有 agent 都能读写的公共文件。
+- `agents/<provider>/` 放该 AI 自己的草稿。`<provider>` 使用注册表中的名字，例如 `codex`。
+- `outbox/` 放准备交付的结果。
+
+状态事件默认仍写到 `~/.grokbot-ai-office/events.jsonl`，可用 `RELAY_EVENTS_PATH` 覆盖。事件文件和工作目录都位于 `~/.grokbot-ai-office/` 下，事件不写入 `workspace/`。
+
+### 6.2 跨机器
+
+使用者自己的 Mac 与云端环境不共享上述本地目录。GitHub 仓库是唯一的事实来源，每台机器通过分支和 PR 拉取、推送。体积大的临时二进制（图片、导出包）暂不放进仓库。以后如有需要，可以再增加一个网盘目录。
+
+### 6.3 安全
+
+- 工作目录中不得放入密钥、token 或 cookie。
+- `.gitignore` 排除 `workspace/`，避免把本机文件提交进仓库。
+- `subscription` 适配器仍然必须声明 `safe_mode`。
+
+## 7. 错误处理
 
 （参考：nodebestpractices 第 2 节“错误处理”）
 
@@ -206,14 +242,15 @@ providers:
 4. 永不吞错误，永不用默认文本冒充回答。
 5. CLI 适配器保留 stderr 前 2000 字符作为 `cause`，但须先过滤疑似密钥。
 
-## 7. 安全
+## 8. 安全
 
 - 密钥只放在 `.env` 或系统环境变量，永不写进仓库、配置文件或聊天。
 - `.env.example` 只列变量名，值留空。
 - 每个 `subscription` 提供者必须声明只读或安全模式参数。
 - 日志与事件中不记录密钥、提示原文。
+- 共享工作目录（见第 6 节）不得写入密钥，并且不要提交。
 - （参考：elsewhencode/project-guidelines“环境变量”一节；github/gitignore）
 
-## 8. 虚拟办公室界面（后续）
+## 9. 虚拟办公室界面（后续）
 
 `apps/office-web` 采用 bulletproof-react 的按功能分目录方式（`src/features/<功能>/`），通过读取事件日志（或后续的 SSE 接口）把每个 AI 显示为一个角色。界面不得调用 AI、不得读取密钥。（参考：alan2207/bulletproof-react `docs/project-structure.md`）
