@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+*.tsbuildinfo
+.turbo/
+
+# test
+coverage/
+
+# secrets and local state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# CLI login files, event logs, and the shared workspace stay on the machine
+events.jsonl
+*.jsonl
+.grokbot-ai-office/
+workspace/
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/

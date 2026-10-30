@@ -1,0 +1,12 @@
+title = "grokbot-ai-office"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "示例变量名和测试夹具，不是真实凭证"
+paths = [
+  '''packages/registry/tests/.*''',
+  '''docs/CONVENTIONS\.md''',
+  '''(^|/)\.env\.example$''',
+]

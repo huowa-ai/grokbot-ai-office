@@ -1,0 +1,32 @@
+{
+  "name": "grokbot-ai-office",
+  "version": "0.0.0",
+  "description": "grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种方式接入 Grok Bot 群聊，并在实时的虚拟办公室界面里看到每个 AI 在做什么。",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "selfcheck": "node scripts/selfcheck.mjs",
+    "relay": "node apps/relay-cli/dist/cli.js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.1",
+    "@semantic-release/github": "^12.0.10",
+    "@semantic-release/npm": "^13.2.0",
+    "@types/node": "^22.19.0",
+    "semantic-release": "^25.0.9",
+    "turbo": "^2.5.8",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
