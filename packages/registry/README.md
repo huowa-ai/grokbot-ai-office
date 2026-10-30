@@ -12,6 +12,8 @@
 - `formatInstanceId` / `parseInstanceId`：`provider@host`，例如 `codex@mac`。
 - `readRelayHost(env)`：读取 `RELAY_HOST`。空值视为未设置，非法名字直接报错。
 
+`ai-relay` 用 `parseInstanceId` 解析 `provider@host`，用 `readRelayHost` 读当前机器，用 `isAvailableOn` 判断 `hosts`。
+
 ## 校验
 
 1. `subscription` 必须有 `command` 和 `safe_mode`。

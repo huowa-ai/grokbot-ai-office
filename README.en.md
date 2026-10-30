@@ -88,16 +88,26 @@ Requires Node.js 22 and pnpm 9.
 1. Install dependencies: `pnpm install`
 2. Build: `pnpm build`
 3. Check: `pnpm lint && pnpm typecheck && pnpm test`
-4. Copy the env template: `cp .env.example .env`. Fill it only on your machine. Do not commit `.env`.
+4. Copy the env template: `cp .env.example .env`. Fill it only on your machine. Do not commit `.env`. `ai-relay` and `pnpm selfcheck` read `.env` in the current directory, and they do not override variables that are already set.
 
-In this skeleton, adapters do not call a real AI. A known name returns an explicit not-implemented error. An unknown name returns `PROVIDER_NOT_FOUND`.
+Call a registered AI. The name is `provider` or `provider@host`. Pass the prompt as an argument, or pipe it on stdin. On success the answer is written to stdout as returned. On failure stderr prints the error code and message, and the process exits non-zero.
 
 ```bash
-pnpm build
-pnpm relay missing-bot "hello"
+pnpm relay codex "introduce yourself in one sentence"
+pnpm relay deepseek@cloud "hello"
+echo "hello" | pnpm relay ollama-local
 ```
 
-`pnpm selfcheck <name>` is reserved for real calls. The current script does not send a request, and CI does not run it.
+`RELAY_HOST` names the machine, for example `mac` or `cloud`. `codex@cloud` fails immediately when `RELAY_HOST=mac` and does not send a request. A provider that sets `hosts` runs only on those machines.
+
+Subscription commands run inside `RELAY_WORKSPACE`, which defaults to `~/.grokbot-ai-office/workspace`. The directory contains `shared/`, `agents/<provider>/`, and `outbox/`.
+
+Self-check is not part of CI. It checks that the CLI exists, that the environment variable is set, and that the HTTP endpoint is reachable. It does not send the API key or the prompt.
+
+```bash
+pnpm selfcheck
+pnpm selfcheck deepseek
+```
 
 ## Onboard a new AI
 
@@ -123,8 +133,8 @@ Add adapter code only when none of the three methods can cover the provider.
 
 ## Roadmap
 
-1. **Skeleton**: repository layout, design docs, registry validation, and error codes. This stage.
-2. **Relay core and adapters**: real CLI, official API, and OpenAI-compatible calls.
+1. **Skeleton**: repository layout, design docs, registry validation, and error codes. Done.
+2. **Relay core and adapters**: real CLI, official API, and OpenAI-compatible calls. This stage. The event sink is wired; writing JSONL is the next stage.
 3. **Events and switching bots**: append JSONL events and switch AIs inside the group chat.
 4. **Office UI**: `apps/office-web` reads events and shows each AI as a character.
 
