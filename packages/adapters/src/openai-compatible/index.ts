@@ -1,11 +1,51 @@
-import { type AdapterPort, RelayError, type RelayRequest } from '@grokbot-ai-office/core';
+import { type AdapterPort, RelayError } from '@grokbot-ai-office/core';
 
-export const openaiCompatibleAdapter: AdapterPort = {
-  kind: 'http',
-  async call(_request: RelayRequest, _signal: AbortSignal): Promise<string> {
-    throw new RelayError('HTTP_ERROR', 'OpenAI 兼容适配器将在后续步骤实现');
-  },
-  async selfcheck(): Promise<{ ok: boolean; detail: string }> {
-    return { ok: false, detail: 'OpenAI 兼容适配器将在后续步骤实现' };
-  },
-};
+import {
+  postChatCompletions,
+  probeEndpoint,
+  readOptionalApiKey,
+} from '../http/chat-completions.js';
+import type { AdapterRuntime, OpenAiCompatibleConfig } from '../types.js';
+
+export function createOpenAiCompatibleAdapter(
+  config: OpenAiCompatibleConfig,
+  providerName: string,
+  runtime: AdapterRuntime = {},
+): AdapterPort {
+  const env = runtime.env ?? process.env;
+
+  return {
+    kind: 'http',
+    async call(request, signal) {
+      if (config.base_url.trim().length === 0 || config.model.trim().length === 0) {
+        throw new RelayError('CONFIG_INVALID', `提供者 ${providerName} 缺少 base_url 或 model`);
+      }
+      const apiKey = readOptionalApiKey(config.key_env, env);
+      return postChatCompletions({
+        baseUrl: config.base_url,
+        model: config.model,
+        prompt: request.prompt,
+        apiKey,
+        signal,
+        fetchImpl: runtime.fetchImpl,
+      });
+    },
+    async selfcheck() {
+      if (typeof config.key_env === 'string' && config.key_env.length > 0) {
+        const key = env[config.key_env];
+        if (typeof key !== 'string' || key.trim().length === 0) {
+          return { ok: false, detail: `${config.key_env} 未设置` };
+        }
+      }
+      const probe = await probeEndpoint(config.base_url, runtime.fetchImpl);
+      const keyNote =
+        typeof config.key_env === 'string' && config.key_env.length > 0
+          ? `已设置 ${config.key_env}，`
+          : '';
+      return {
+        ok: probe.ok,
+        detail: probe.ok ? `${keyNote}${probe.detail}` : probe.detail,
+      };
+    },
+  };
+}

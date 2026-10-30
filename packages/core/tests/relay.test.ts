@@ -102,4 +102,98 @@ describe('relay', () => {
     expect(empty.error?.code).toBe('EMPTY_RESPONSE');
     expect(empty.text).toBeUndefined();
   });
+
+  it('relay 在请求主机与当前 RELAY_HOST 不一致时返回 CONFIG_INVALID', async () => {
+    const events: RelayEvent[] = [];
+    let called = false;
+    const result = await relay(
+      { provider: 'codex', prompt },
+      {
+        hasProvider: () => true,
+        host: 'mac',
+        requestedHost: 'cloud',
+        resolveAdapter: () => {
+          called = true;
+          return idleAdapter;
+        },
+        events: {
+          async emit(event) {
+            events.push(event);
+          },
+        },
+      },
+    );
+
+    expect(called).toBe(false);
+    expect(events).toEqual([]);
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('CONFIG_INVALID');
+    expect(result.error?.message).toContain('cloud');
+    expect(result.error?.message).toContain('mac');
+    expect(result.text).toBeUndefined();
+  });
+
+  it('relay 在 hosts 不允许当前主机时返回 CONFIG_INVALID', async () => {
+    let called = false;
+    const result = await relay(
+      { provider: 'codex', prompt },
+      {
+        hasProvider: () => true,
+        host: 'mac',
+        isAvailableOnHost: () => false,
+        resolveAdapter: () => {
+          called = true;
+          return idleAdapter;
+        },
+      },
+    );
+
+    expect(called).toBe(false);
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('CONFIG_INVALID');
+    expect(result.error?.message).toContain('主机 mac');
+  });
+
+  it('relay 成功时发出 started 与 done，且事件不含提示和回答', async () => {
+    const events: RelayEvent[] = [];
+    const answer = '适配器原文';
+    const result = await relay(
+      { provider: 'codex', prompt, replyTo: 'huowa' },
+      {
+        hasProvider: () => true,
+        host: 'cloud',
+        resolveAdapter: () => ({
+          kind: 'http',
+          async call() {
+            return answer;
+          },
+          async selfcheck() {
+            return { ok: true, detail: 'unused' };
+          },
+        }),
+        events: {
+          async emit(event) {
+            events.push(event);
+          },
+        },
+      },
+    );
+
+    expect(result).toMatchObject({ ok: true, text: answer });
+    expect(events.map((event) => event.type)).toEqual(['started', 'replying_to', 'done']);
+    expect(events.every((event) => event.host === 'cloud')).toBe(true);
+    const encoded = JSON.stringify(events);
+    expect(encoded).not.toContain(prompt);
+    expect(encoded).not.toContain(answer);
+  });
 });
+
+const idleAdapter: AdapterPort = {
+  kind: 'cli',
+  async call() {
+    return 'unused';
+  },
+  async selfcheck() {
+    return { ok: true, detail: 'unused' };
+  },
+};

@@ -37,4 +37,4 @@
 - `pnpm typecheck`：TypeScript 严格类型检查。
 - `pnpm test`：运行 vitest。
 - `pnpm --filter @grokbot-ai-office/core test`：只测一个包。
-- `pnpm selfcheck <名字>`：预留的真实调用自检，不进入 CI。当前骨架不会发起请求。
+- `pnpm selfcheck [名字]`：检查命令是否存在、密钥变量是否已设置、端点是否可达。不把提示发给模型，也不进入 CI。

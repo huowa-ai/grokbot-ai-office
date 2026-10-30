@@ -4,20 +4,39 @@ import { createAdapter } from '@grokbot-ai-office/adapters';
 import { RelayError } from '@grokbot-ai-office/core';
 
 describe('createAdapter', () => {
-  it('createAdapter 按 auth 返回对应种类且不调用真实 AI', async () => {
-    const subscription = createAdapter('subscription');
-    const apiKey = createAdapter('api_key');
-    const compatible = createAdapter('openai_compatible');
+  it('createAdapter 按 auth 返回对应种类', () => {
+    expect(
+      createAdapter(
+        {
+          auth: 'subscription',
+          command: ['echo', 'hi'],
+          safe_mode: 'echo',
+        },
+        'codex',
+      ).kind,
+    ).toBe('cli');
+    expect(
+      createAdapter(
+        { auth: 'api_key', vendor: 'deepseek', key_env: 'DEEPSEEK_API_KEY' },
+        'deepseek',
+      ).kind,
+    ).toBe('http');
+    expect(
+      createAdapter(
+        {
+          auth: 'openai_compatible',
+          base_url: 'http://localhost:11434/v1',
+          model: 'qwen2.5:7b',
+          key_env: null,
+        },
+        'ollama-local',
+      ).kind,
+    ).toBe('http');
+  });
 
-    expect(subscription.kind).toBe('cli');
-    expect(apiKey.kind).toBe('http');
-    expect(compatible.kind).toBe('http');
-
-    const signal = new AbortController().signal;
-    const request = { provider: 'codex', prompt: 'hi' };
-    await expect(subscription.call(request, signal)).rejects.toBeInstanceOf(RelayError);
-    await expect(subscription.selfcheck()).resolves.toMatchObject({ ok: false });
-    await expect(apiKey.selfcheck()).resolves.toMatchObject({ ok: false });
-    await expect(compatible.selfcheck()).resolves.toMatchObject({ ok: false });
+  it('createAdapter 遇到未知 auth 时抛出 CONFIG_INVALID', () => {
+    expect(() =>
+      createAdapter({ auth: 'oauth' } as unknown as Parameters<typeof createAdapter>[0], 'custom'),
+    ).toThrow(RelayError);
   });
 });

@@ -8,5 +8,6 @@ export type {
   RelayRequest,
   RelayResult,
 } from './ports.js';
-export { relay } from './relay.js';
+export { redactSecrets } from './redact.js';
+export { noopEventSink, relay } from './relay.js';
 export type { RelayDependencies } from './relay.js';

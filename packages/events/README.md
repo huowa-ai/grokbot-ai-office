@@ -1,6 +1,6 @@
 # @grokbot-ai-office/events
 
-状态事件的类型和路径。本包不做中转判断。写入 JSONL 与订阅留在后续步骤，避免现在就产生事件日志。
+状态事件的类型和路径。本包不做中转判断。`relay()` 已经会把 `started`、`replying_to`、`done`、`error` 交给注入的事件槽；把 JSONL 写到磁盘留在下一步，避免现在就产生事件日志。
 
 ## 公开 API
 
