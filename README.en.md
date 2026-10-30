@@ -32,6 +32,7 @@ Implemented official vendors are DeepSeek, Kimi, GLM, Anthropic (Claude), and Ge
 flowchart TB
   subgraph appLayer [Apps]
     cli[apps/relay-cli]
+    mcp[apps/mcp-server]
     server[apps/event-server]
     web[apps/office-web]
   end
@@ -44,6 +45,7 @@ flowchart TB
     events[packages/events]
   end
   cli -->|compose and call| core
+  mcp -->|ask calls relay| core
   adapters -->|implement AdapterPort| core
   registry -->|supply config| cli
   events -->|implement EventSink| core
@@ -80,6 +82,7 @@ grokbot-ai-office/
 ├── apps/
 │   ├── relay-cli/
 │   ├── event-server/
+│   ├── mcp-server/
 │   └── office-web/
 ├── configs/providers.yaml
 ├── scripts/
@@ -121,6 +124,8 @@ ai-relay hook stop --instance claude@mac
 
 `pnpm serve` is `ai-relay serve`. It binds to `127.0.0.1:8787`, pushes new events on WebSocket `/events`, and serves `GET /state` for late joiners. Binding any other address requires `RELAY_SERVER_TOKEN`. `POST /hook` only appends status. It does not run an AI. Hook setup is in [docs/HOOKS.en.md](./docs/HOOKS.en.md).
 
+`ai-relay mcp` exposes the same relay as the MCP tools `ask`, `list_agents`, and `office_status`. `--http` binds to `127.0.0.1:8788` by default. See [docs/MCP.en.md](./docs/MCP.en.md).
+
 A `subscription` provider may set `pty: true` to keep colors and cursor movement. If `node-pty` fails to load, the call falls back to pipes.
 
 Self-check is not part of CI. It checks that the CLI exists, that the environment variable is set, and that the HTTP endpoint is reachable. It does not send the API key or the prompt.
@@ -158,8 +163,9 @@ The full plan is in [docs/ROADMAP.en.md](./docs/ROADMAP.en.md).
 
 1. **Skeleton.** Done.
 2. **Relay core and adapters.** Done, including DeepSeek, Kimi, GLM, Claude, Gemini, and OpenAI-compatible endpoints.
-3. **Live events.** This stage: JSONL, a local push server, handoff, approval, PTY, and CLI hooks.
-4. Later: an MCP server, the 3D office, the boss view, a macOS Dynamic Island, and npm distribution. See the roadmap.
+3. **Live events.** Done: JSONL, a local push server, handoff, approval, PTY, and CLI hooks.
+4. **MCP server.** Done: `ai-relay mcp`. See [docs/MCP.en.md](./docs/MCP.en.md).
+5. Later: the 3D office, the boss view, a macOS Dynamic Island, and npm distribution. See the roadmap.
 
 ## Docs
 
@@ -167,5 +173,6 @@ The full plan is in [docs/ROADMAP.en.md](./docs/ROADMAP.en.md).
 - Architecture: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - Roadmap: [docs/ROADMAP.en.md](./docs/ROADMAP.en.md)
 - CLI hooks: [docs/HOOKS.en.md](./docs/HOOKS.en.md)
+- MCP server: [docs/MCP.en.md](./docs/MCP.en.md)
 - Engineering conventions: [docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)

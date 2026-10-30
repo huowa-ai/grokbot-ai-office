@@ -1,0 +1,29 @@
+{
+  "name": "@grokbot-ai-office/mcp-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ai-relay 的 MCP 入站适配器。工具只调用 core 的 relay()、事件和状态。",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts apps/mcp-server/tests"
+  },
+  "dependencies": {
+    "@grokbot-ai-office/adapters": "workspace:*",
+    "@grokbot-ai-office/core": "workspace:*",
+    "@grokbot-ai-office/events": "workspace:*",
+    "@grokbot-ai-office/registry": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
+  }
+}

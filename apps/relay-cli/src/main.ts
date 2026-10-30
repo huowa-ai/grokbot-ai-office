@@ -16,7 +16,7 @@ import {
   resolveProvidersPath,
 } from '@grokbot-ai-office/registry';
 
-import { runApproval, runHandoff, runHook, runServe, usageText } from './commands.js';
+import { runApproval, runHandoff, runHook, runMcp, runServe, usageText } from './commands.js';
 
 export interface RunIo {
   stdin?: NodeJS.ReadableStream;
@@ -50,6 +50,9 @@ export async function run(
   }
   if (rawName === 'hook') {
     return runHook(promptParts, env, io);
+  }
+  if (rawName === 'mcp') {
+    return runMcp(promptParts, cwd, env, io);
   }
 
   const prompt = await resolvePrompt(promptParts, io);

@@ -17,6 +17,7 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 - 测试：`pnpm test`（单包：`pnpm --filter @grokbot-ai-office/core test`）
 - 真实调用自检：`pnpm selfcheck <名字>`（不在 CI 中运行）
 - 事件服务：`pnpm serve`（即 `ai-relay serve`，默认 `127.0.0.1:8787`）
+- MCP 服务器：`ai-relay mcp`（stdio），或 `ai-relay mcp --http`（默认 `127.0.0.1:8788`）。说明见 `docs/MCP.md`
 
 ## 必须遵守
 

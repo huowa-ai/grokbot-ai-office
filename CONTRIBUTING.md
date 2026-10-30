@@ -19,7 +19,7 @@
 
 ## 约定式提交
 
-类型使用 `feat`、`fix`、`docs`、`refactor`、`test`、`chore`、`ci`、`perf`。范围使用包名，例如 `core`、`adapters`、`registry`、`events`、`relay-cli`、`office-web`、`configs`。
+类型使用 `feat`、`fix`、`docs`、`refactor`、`test`、`chore`、`ci`、`perf`。范围使用包名，例如 `core`、`adapters`、`registry`、`events`、`relay-cli`、`mcp-server`、`office-web`、`configs`。
 
 `semantic-release` 根据这些信息生成 `CHANGELOG.md`。发布配置在 `.releaserc.json`，其中 `@semantic-release/npm` 设置了 `npmPublish: false`，不会把包发到 npm。
 
