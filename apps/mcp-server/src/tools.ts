@@ -66,6 +66,63 @@ interface ProgressExtra {
   }): Promise<void>;
 }
 
+/**
+ * 固定到单个 AI 的工具集：只给 ask（不带 provider 参数）和 office_status。
+ * 用于 /mcp/<agent>，让每个 Grok Bot 只看见自己的模型。
+ */
+export function registerPinnedTools(
+  server: McpServer,
+  options: ResolvedMcpOptions,
+  agent: string,
+): void {
+  server.registerTool(
+    'ask',
+    {
+      title: `问 ${agent}`,
+      description: `向本机的 ${agent} 提问。不会执行命令。`,
+      inputSchema: {
+        prompt: z.string().min(1),
+        taskId: taskIdSchema.optional(),
+      },
+      outputSchema: {
+        text: z.string(),
+        instance: z.string(),
+        taskId: z.string(),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async (args, extra) =>
+      ask(
+        options,
+        {
+          provider: agent,
+          prompt: args.prompt,
+          ...(args.taskId === undefined ? {} : { taskId: args.taskId }),
+        },
+        extra,
+      ),
+  );
+  server.registerTool(
+    'office_status',
+    {
+      title: '办公室状态',
+      description: '读取办公室快照：每个实例的状态、最近活动和待批准事项。',
+      inputSchema: {},
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+    },
+    async () => officeStatus(options),
+  );
+}
+
+/** 注册表里是否有这个名字（供 /mcp/<agent> 路由校验）。 */
+export function hasRegisteredAgent(options: ResolvedMcpOptions, agent: string): boolean {
+  try {
+    return Object.hasOwn(loadRegistry(options).config.providers, agent);
+  } catch {
+    return false;
+  }
+}
+
 export function registerRelayTools(server: McpServer, options: ResolvedMcpOptions): void {
   server.registerTool(
     'ask',

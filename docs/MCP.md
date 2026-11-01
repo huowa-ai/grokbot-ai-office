@@ -55,6 +55,30 @@ Authorization: Bearer <令牌>
 
 这里不接受查询字符串里的令牌，避免它出现在访问日志里。令牌只放环境变量，不要写进配置、聊天或命令行参数。
 
+### 远程接入：每个模型一个云端 Grok Bot
+
+云端 Grok Bot 连不到你 Mac 的 `127.0.0.1`，用 Cloudflare 快速隧道把本机 MCP 暴露出去。`init` 会在 `~/.grokbot-ai-office/.env` 自动生成 `RELAY_SERVER_TOKEN`。
+
+```bash
+# 终端 1：启动 MCP（读取 ~/.grokbot-ai-office/.env 里的令牌）
+npx grokbot-ai-office mcp --http --port 8788
+# 终端 2：开隧道（brew install cloudflared）
+cloudflared tunnel --url http://127.0.0.1:8788
+```
+
+隧道会打印 `https://<随机>.trycloudflare.com`。在 Grok Bot 里按模型各加一个自定义连接器：
+
+| 地址 | 工具 |
+| --- | --- |
+| `https://<随机>.trycloudflare.com/mcp` | 全部：`ask`、`list_agents`、`office_status` 等 |
+| `https://<随机>.trycloudflare.com/mcp/<名字>`，例如 `/mcp/claude` | 只有 `ask`（固定这个模型，没有 provider 参数）和 `office_status` |
+
+请求头：`Authorization: Bearer <RELAY_SERVER_TOKEN>`。
+
+- 没设令牌时，带 `X-Forwarded-For`、`CF-Connecting-IP`、`Forwarded`、`CF-Ray` 的转发请求一律 401，避免隧道把无鉴权服务暴露到公网。
+- HTTP 模式是无状态的：每个 POST 独立处理，多个 bot 可以同时连。不支持 GET SSE 流。
+- 快速隧道地址每次重启都会变，要更新连接器；想要固定地址就用命名隧道。Mac 休眠或关机时 bot 连不上。
+
 ## 工具
 
 `provider` 只能是注册表里的名字，例如 `codex`，或者 `provider@host`，例如 `codex@mac`。`provider@host` 里的主机必须等于当前 `RELAY_HOST`。写了 `hosts` 的提供者，只在列出的机器上可用。超时用注册表的 `timeout_ms`。`subscription` 仍然必须有 `safe_mode`。

@@ -4,7 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { type RelayMcpOptions, resolveMcpOptions } from './options.js';
-import { registerRelayTools } from './tools.js';
+import { registerPinnedTools, registerRelayTools } from './tools.js';
 
 const INSTRUCTIONS = [
   '只调用注册表中的 AI。',
@@ -12,8 +12,16 @@ const INSTRUCTIONS = [
   '不要执行 shell，不要拼接命令。',
 ].join('');
 
-export function createRelayMcpServer(options: RelayMcpOptions = {}): McpServer {
+export function createRelayMcpServer(options: RelayMcpOptions = {}, agent?: string): McpServer {
   const resolved = resolveMcpOptions(options);
+  if (agent !== undefined) {
+    const server = new McpServer(
+      { name: `ai-relay-${agent}`, version: '0.0.0' },
+      { instructions: `你连接的是本机的 ${agent}。用 ask 提问，用 office_status 查看状态。` },
+    );
+    registerPinnedTools(server, resolved, agent);
+    return server;
+  }
   const server = new McpServer(
     { name: 'ai-relay', version: '0.0.0' },
     { instructions: INSTRUCTIONS },

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { type IncomingMessage, type ServerResponse, createServer } from 'node:http';
 import type { Socket } from 'node:net';
 
@@ -8,6 +7,7 @@ import { assertMcpBind, bearerAuthorized, normalizeToken, resolveMcpBind } from 
 import type { RelayMcpOptions } from './options.js';
 import { resolveMcpOptions } from './options.js';
 import { createRelayMcpServer } from './server.js';
+import { hasRegisteredAgent } from './tools.js';
 
 export interface McpHttpOptions extends RelayMcpOptions {
   host?: string;
@@ -31,11 +31,6 @@ export async function startMcpHttp(options: McpHttpOptions = {}): Promise<McpHtt
   const token = options.token === undefined ? bind.token : normalizeToken(options.token);
   assertMcpBind(bind.host, token);
   const resolved = resolveMcpOptions(options);
-  const mcp = createRelayMcpServer(options);
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  });
-  await mcp.connect(transport);
 
   const sockets = new Set<Socket>();
   const httpServer = createServer((req, res) => {
@@ -56,38 +51,49 @@ export async function startMcpHttp(options: McpHttpOptions = {}): Promise<McpHtt
   });
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    // 经隧道/反向代理转发进来的请求看起来也来自 127.0.0.1；没设令牌时一律拒绝。
+    if (token === undefined && isForwarded(req)) {
+      sendJson(res, 401, { ok: false, error: 'UNAUTHORIZED' });
+      return;
+    }
     if (!bearerAuthorized(req, token)) {
       sendJson(res, 401, { ok: false, error: 'UNAUTHORIZED' });
       return;
     }
     const pathname = requestPath(req);
+    let agent: string | undefined;
     if (pathname !== '/mcp') {
-      sendJson(res, 404, { ok: false, error: 'NOT_FOUND' });
-      return;
+      const match = /^\/mcp\/([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(pathname);
+      if (match === null || !hasRegisteredAgent(resolved, match[1] as string)) {
+        sendJson(res, 404, { ok: false, error: 'NOT_FOUND' });
+        return;
+      }
+      agent = match[1];
     }
-    if (req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
+    if (req.method !== 'POST') {
+      // 无状态模式：每个 POST 独立处理，多个云端 bot 可以同时连接。
       sendJson(res, 405, { ok: false, error: 'METHOD_NOT_ALLOWED' });
       return;
     }
+    const mcp = createRelayMcpServer(options, agent);
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on('close', () => {
+      void transport.close();
+      void mcp.close();
+    });
+    await mcp.connect(transport);
     await transport.handleRequest(req, res);
   }
-
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const onError = (error: Error): void => {
-        reject(error);
-      };
-      httpServer.once('error', onError);
-      httpServer.listen(bind.port, bind.host, () => {
-        httpServer.off('error', onError);
-        resolve();
-      });
+  await new Promise<void>((resolve, reject) => {
+    const onError = (error: Error): void => {
+      reject(error);
+    };
+    httpServer.once('error', onError);
+    httpServer.listen(bind.port, bind.host, () => {
+      httpServer.off('error', onError);
+      resolve();
     });
-  } catch (error) {
-    await transport.close();
-    await mcp.close();
-    throw error;
-  }
+  });
 
   const address = httpServer.address();
   const port = typeof address === 'object' && address !== null ? address.port : bind.port;
@@ -101,8 +107,6 @@ export async function startMcpHttp(options: McpHttpOptions = {}): Promise<McpHtt
       for (const socket of sockets) {
         socket.destroy();
       }
-      await transport.close();
-      await mcp.close();
       if (!httpServer.listening) {
         return;
       }
@@ -117,6 +121,16 @@ export async function startMcpHttp(options: McpHttpOptions = {}): Promise<McpHtt
       });
     },
   };
+}
+
+function isForwarded(req: IncomingMessage): boolean {
+  const h = req.headers;
+  return (
+    h['x-forwarded-for'] !== undefined ||
+    h['cf-connecting-ip'] !== undefined ||
+    h.forwarded !== undefined ||
+    h['cf-ray'] !== undefined
+  );
 }
 
 function requestPath(req: IncomingMessage): string {

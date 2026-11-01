@@ -29,6 +29,9 @@ describe('init', () => {
       readFileSync(repoProviders, 'utf8'),
     );
     expect(readFileSync(path.join(dir, '.env.example'), 'utf8')).toContain('RELAY_HOST=');
+    expect(readFileSync(path.join(dir, '.env'), 'utf8')).toMatch(
+      /^RELAY_SERVER_TOKEN=[0-9a-f]{64}$/m,
+    );
     expect(lines.some((l) => l.includes('✓ codex'))).toBe(true);
     expect(lines.some((l) => l.includes('✗ grok'))).toBe(true);
   });
