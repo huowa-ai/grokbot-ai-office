@@ -27,3 +27,4 @@ workspace/
 .DS_Store
 .idea/
 .vscode/
+apps/npm/README.md

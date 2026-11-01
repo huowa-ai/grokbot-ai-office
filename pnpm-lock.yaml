@@ -76,6 +76,28 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  apps/npm:
+    optionalDependencies:
+      node-pty:
+        specifier: ^1.0.0
+        version: 1.1.0
+    devDependencies:
+      '@grokbot-ai-office/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@grokbot-ai-office/office':
+        specifier: workspace:*
+        version: link:../office
+      '@grokbot-ai-office/registry':
+        specifier: workspace:*
+        version: link:../../packages/registry
+      '@grokbot-ai-office/relay-cli':
+        specifier: workspace:*
+        version: link:../relay-cli
+      esbuild:
+        specifier: ^0.25.12
+        version: 0.25.12
+
   apps/office:
     dependencies:
       '@xterm/xterm':
