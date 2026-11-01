@@ -94,6 +94,9 @@ importers:
       '@grokbot-ai-office/relay-cli':
         specifier: workspace:*
         version: link:../relay-cli
+      '@grokbot-ai-office/workbench':
+        specifier: workspace:*
+        version: link:../workbench
       esbuild:
         specifier: ^0.25.12
         version: 0.25.12
@@ -143,6 +146,32 @@ importers:
       '@grokbot-ai-office/registry':
         specifier: workspace:*
         version: link:../../packages/registry
+      '@grokbot-ai-office/workbench':
+        specifier: workspace:*
+        version: link:../workbench
+
+  apps/workbench:
+    dependencies:
+      '@grokbot-ai-office/registry':
+        specifier: workspace:*
+        version: link:../../packages/registry
+      '@xterm/addon-fit':
+        specifier: ^0.10.0
+        version: 0.10.0(@xterm/xterm@5.5.0)
+      '@xterm/xterm':
+        specifier: ^5.5.0
+        version: 5.5.0
+      ws:
+        specifier: ^8.18.3
+        version: 8.22.0
+    optionalDependencies:
+      node-pty:
+        specifier: ^1.0.0
+        version: 1.1.0
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.2
 
   packages/adapters:
     dependencies:
@@ -931,6 +960,11 @@ packages:
 
   '@vitest/utils@3.2.7':
     resolution: {integrity: sha512-x6BDOd7dyo3PFLY3I9/HJ25X/6OurhGXk2/B9gOZNPF7XDVjeBK4k01lQE5uvDpbuheErh91qYuE1E2OEjK3Rw==}
+
+  '@xterm/addon-fit@0.10.0':
+    resolution: {integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==}
+    peerDependencies:
+      '@xterm/xterm': ^5.0.0
 
   '@xterm/xterm@5.5.0':
     resolution: {integrity: sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A==}
@@ -3178,6 +3212,10 @@ snapshots:
       '@vitest/pretty-format': 3.2.7
       loupe: 3.2.1
       tinyrainbow: 2.0.0
+
+  '@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)':
+    dependencies:
+      '@xterm/xterm': 5.5.0
 
   '@xterm/xterm@5.5.0': {}
 

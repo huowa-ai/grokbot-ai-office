@@ -13,6 +13,7 @@ import { configDir, runInit } from './init.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const bundledProviders = path.join(here, 'configs', 'providers.yaml');
 const bundledOffice = path.join(here, 'office');
+const bundledWorkbench = path.join(here, 'workbench');
 
 export function usage(): string {
   return [
@@ -22,6 +23,9 @@ export function usage(): string {
     '  ask <名字> [提示|--stdin|--file 路径]  向一个 AI 提问，只把回答打印到标准输出；失败时非零退出',
     '  mcp [--http] [--port 8788]   启动 MCP 服务',
     '  office [--port 8789] [--demo] 打开 3D 办公室',
+    '  workbench [--port 8790]      打开本机工作台（tmux 终端墙 + 产出箱）',
+    '  run <名字> --task <slug> --file <提示> [--wait]  在 tmux 会话 gb-<名字>-<slug> 里跑任务',
+    '  term <名字> [--cwd 目录]     打开交互式会话 gb-<名字>-interactive',
     '  serve | handoff | approval | hook  与 ai-relay 相同',
     '',
     '配置查找顺序：RELAY_PROVIDERS_PATH → ./configs/providers.yaml → ~/.grokbot-ai-office/providers.yaml → 内置默认',
@@ -61,6 +65,9 @@ async function main(argv: string[]): Promise<number> {
   }
   if (!env.RELAY_OFFICE_DIST && existsSync(path.join(bundledOffice, 'index.html'))) {
     env.RELAY_OFFICE_DIST = bundledOffice;
+  }
+  if (!env.RELAY_WORKBENCH_DIST && existsSync(path.join(bundledWorkbench, 'index.html'))) {
+    env.RELAY_WORKBENCH_DIST = bundledWorkbench;
   }
   // registry 读 process.env；把解析好的路径同步回去。
   if (env.RELAY_PROVIDERS_PATH !== undefined) {

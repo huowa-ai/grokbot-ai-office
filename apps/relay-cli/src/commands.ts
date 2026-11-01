@@ -217,6 +217,9 @@ export function usageText(): string {
     'ai-relay mcp',
     'ai-relay mcp --http [--host 127.0.0.1] [--port 8788]',
     'ai-relay office [--port 8789] [--demo]',
+    'ai-relay workbench [--port 8790] [--no-open]',
+    'ai-relay run <名字> --task <slug> --file <提示文件> [--wait] [--cwd 目录]',
+    'ai-relay term <名字> [--cwd 目录]',
   ].join('\n');
 }
 
