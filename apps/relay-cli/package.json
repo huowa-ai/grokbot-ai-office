@@ -32,6 +32,7 @@
     "@grokbot-ai-office/events": "workspace:*",
     "@grokbot-ai-office/mcp-server": "workspace:*",
     "@grokbot-ai-office/office": "workspace:*",
-    "@grokbot-ai-office/registry": "workspace:*"
+    "@grokbot-ai-office/registry": "workspace:*",
+    "@grokbot-ai-office/workbench": "workspace:*"
   }
 }

@@ -20,6 +20,12 @@ import {
 
 import { runApproval, runHandoff, runHook, runMcp, runServe, usageText } from './commands.js';
 import { runOffice } from './office.js';
+import {
+  runFinishCommand,
+  runTaskCommand,
+  runTermCommand,
+  runWorkbenchCommand,
+} from './workbench.js';
 
 export interface RunIo {
   stdin?: NodeJS.ReadableStream;
@@ -56,6 +62,18 @@ export async function run(
   }
   if (rawName === 'mcp') {
     return runMcp(promptParts, cwd, env, io);
+  }
+  if (rawName === 'workbench') {
+    return runWorkbenchCommand(promptParts, cwd, env, io);
+  }
+  if (rawName === 'run') {
+    return runTaskCommand(promptParts, cwd, env, io);
+  }
+  if (rawName === 'term') {
+    return runTermCommand(promptParts, cwd, io);
+  }
+  if (rawName === '__finish') {
+    return runFinishCommand(promptParts);
   }
   if (rawName === 'office') {
     return runOffice(promptParts, cwd, env, io);
