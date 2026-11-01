@@ -43,6 +43,8 @@ A capsule along the top of the screen. Each AI is one status dot. Hover to expan
 
 ## Step 6. Distribution
 
+> Status: packaging is ready. `apps/npm` builds a single npm package `grokbot-ai-office` (bin `grokbot-ai-office`, alias `ai-relay`) with `init`, `ask`, `mcp`, and `office`. The setup prompt is `docs/SETUP_PROMPT.en.md`. `.github/workflows/release.yml` publishes with `NPM_TOKEN` when a `v*` tag is pushed. Not published yet, pending the visibility decision. The Grok Bot template export is not done.
+
 Publish an npm package: `npx grokbot-ai-office init | mcp | office | ask`. Also export a Grok Bot template. Each person runs it on their own computer with their own AI accounts and keys. This is not a hosted SaaS. Before the npm publish, decide whether the repository is public.
 
 The deliverables also include a setup prompt, `docs/SETUP_PROMPT.md`, and an English copy, `docs/SETUP_PROMPT.en.md`. A person pastes it into Grok Bot or any coding AI, and that AI installs grokbot-ai-office. The pasteable-prompt idea comes from rakazo's SETUP_PROMPT.md. This step keeps the idea only.

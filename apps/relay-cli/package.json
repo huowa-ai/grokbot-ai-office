@@ -13,6 +13,10 @@
     ".": {
       "types": "./dist/main.d.ts",
       "import": "./dist/main.js"
+    },
+    "./dotenv": {
+      "types": "./dist/dotenv.d.ts",
+      "import": "./dist/dotenv.js"
     }
   },
   "files": ["dist"],

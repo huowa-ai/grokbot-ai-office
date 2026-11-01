@@ -1,0 +1,54 @@
+name: release
+
+# 推送 v* 标签时把 apps/npm 发布为 npm 包 grokbot-ai-office。
+# 需要仓库 secret NPM_TOKEN（npm 的 Automation / Granular token）。
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check tag matches package version
+        run: |
+          version=$(node -p "require('./apps/npm/package.json').version")
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "tag ${GITHUB_REF_NAME} 与 apps/npm/package.json 版本 ${version} 不一致"
+            exit 1
+          fi
+
+      - run: pnpm build
+
+      - run: pnpm test
+
+      - name: Smoke test tarball
+        working-directory: apps/npm
+        run: |
+          npm pack --pack-destination /tmp/pkg
+          mkdir -p /tmp/smoke && cd /tmp/smoke && npm init -y >/dev/null
+          npm install /tmp/pkg/grokbot-ai-office-*.tgz
+          npx grokbot-ai-office --help
+          HOME=/tmp/smoke npx grokbot-ai-office init
+
+      - name: Publish
+        working-directory: apps/npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -25,7 +25,14 @@ export class ProvidersConfigError extends Error {
   }
 }
 
-export function resolveProvidersPath(cwd = process.cwd()): string {
+export function resolveProvidersPath(
+  cwd = process.cwd(),
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const override = env.RELAY_PROVIDERS_PATH?.trim();
+  if (override && override.length > 0) {
+    return path.resolve(cwd, override);
+  }
   return path.join(cwd, 'configs', 'providers.yaml');
 }
 
