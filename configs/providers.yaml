@@ -33,6 +33,12 @@ providers:
     output_filter: "^\\["      # 去掉以 [ 开头的日志行
     safe_mode: "--local"
 
+  grok:
+    auth: subscription
+    command: ["grok", "--prompt-file", "{file}", "--permission-mode", "plan", "--no-alt-screen"]
+    input: file
+    safe_mode: "--permission-mode plan"
+
   deepseek:
     auth: api_key
     vendor: deepseek
