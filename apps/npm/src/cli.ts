@@ -63,7 +63,9 @@ async function main(argv: string[]): Promise<number> {
     env.RELAY_OFFICE_DIST = bundledOffice;
   }
   // registry 读 process.env；把解析好的路径同步回去。
-  process.env.RELAY_PROVIDERS_PATH = env.RELAY_PROVIDERS_PATH;
+  if (env.RELAY_PROVIDERS_PATH !== undefined) {
+    process.env.RELAY_PROVIDERS_PATH = env.RELAY_PROVIDERS_PATH;
+  }
 
   const relayArgv = command === 'ask' ? rest : argv;
   return run(relayArgv, cwd, env, {
