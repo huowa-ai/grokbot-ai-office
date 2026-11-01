@@ -194,3 +194,7 @@ pnpm selfcheck deepseek
 - 3D 办公室：[docs/OFFICE.md](./docs/OFFICE.md)
 - 工程规范：[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 - 贡献：[CONTRIBUTING.md](./CONTRIBUTING.md)
+
+## 许可证
+
+[MIT](LICENSE) © 2026 huowa-ai

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "多 AI 协作办公室：任何 AI 都能以同一种方式接入 Grok Bot 群聊，并在实时 3D 办公室里看到每个 AI 在做什么。",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/huowa-ai/grokbot-ai-office.git",
@@ -17,7 +17,7 @@
     "grokbot-ai-office": "./dist/cli.js",
     "ai-relay": "./dist/cli.js"
   },
-  "files": ["dist", "README.md"],
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "node scripts/bundle.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",

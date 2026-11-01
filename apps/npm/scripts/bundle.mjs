@@ -38,3 +38,4 @@ cpSync(officeDist, path.join(dist, 'office'), { recursive: true });
 mkdirSync(path.join(dist, 'configs'), { recursive: true });
 cpSync(path.join(repo, 'configs/providers.yaml'), path.join(dist, 'configs/providers.yaml'));
 cpSync(path.join(repo, 'README.md'), path.join(root, 'README.md'));
+cpSync(path.join(repo, 'LICENSE'), path.join(root, 'LICENSE'));

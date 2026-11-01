@@ -10,6 +10,7 @@
   "bugs": {
     "url": "https://github.com/huowa-ai/grokbot-ai-office/issues"
   },
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.9",
