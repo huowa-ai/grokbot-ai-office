@@ -93,6 +93,19 @@ grokbot-ai-office/
 
 ## 快速开始
 
+### 用 npm（发布后）
+
+```bash
+npx grokbot-ai-office init      # 创建 ~/.grokbot-ai-office/ 并检测本机 AI 命令行
+npx grokbot-ai-office ask codex "你好"
+npx grokbot-ai-office mcp
+npx grokbot-ai-office office
+```
+
+也可以把 [docs/SETUP_PROMPT.md](./docs/SETUP_PROMPT.md) 整段贴给 Grok Bot，让它帮你装。npm 包的源码在 `apps/npm`，推送 `v*` 标签时由 `.github/workflows/release.yml` 发布。
+
+### 从源码
+
 需要 Node.js 22 和 pnpm 9。
 
 1. 安装依赖：`pnpm install`
@@ -169,7 +182,7 @@ pnpm selfcheck deepseek
 3. **实时事件**。已完成：JSONL、本机推送、交接、批准、伪终端和 CLI 钩子。
 4. **MCP 服务器**。已完成：`ai-relay mcp`。见 [docs/MCP.md](./docs/MCP.md)。
 5. **3D 办公室**。已完成：等距场景、实时终端和每个 AI 的形象。见 [docs/OFFICE.md](./docs/OFFICE.md)。
-6. 之后是老板视角、macOS 灵动岛和 npm 分发。细节在路线图里。
+6. 之后是老板视角和 macOS 灵动岛。npm 分发已准备好（`apps/npm`），等仓库公开后发布。细节在路线图里。
 
 ## 文档
 

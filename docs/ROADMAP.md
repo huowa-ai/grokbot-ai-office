@@ -43,6 +43,8 @@
 
 ## 第六步 分发
 
+> 进度：打包已准备好。`apps/npm` 产出单个 npm 包 `grokbot-ai-office`（命令 `grokbot-ai-office`，别名 `ai-relay`），已实现 `init`、`ask`、`mcp`、`office`，安装提示见 `docs/SETUP_PROMPT.md`。发布工作流 `.github/workflows/release.yml` 在推送 `v*` 标签时用 `NPM_TOKEN` 发布。尚未发布，等决定仓库是否公开。Grok Bot 模板导出还没做。
+
 发布 npm 包。用法是 `npx grokbot-ai-office init | mcp | office | ask`。同时导出 Grok Bot 模板。每个用户在自己的电脑上用自己的 AI 账号和 key 运行，不做托管 SaaS。npm 发布前需要先决定仓库是否公开。
 
 交付物还包括安装提示 `docs/SETUP_PROMPT.md` 和英文版 `docs/SETUP_PROMPT.en.md`。用户把它贴进 Grok Bot 或任何编程 AI，由对方按提示安装。这个写法受到 rakazo 仓库里 SETUP_PROMPT.md 的启发，只借鉴「一份可粘贴的安装提示」这个想法。

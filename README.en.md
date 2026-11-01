@@ -93,6 +93,19 @@ grokbot-ai-office/
 
 ## Quick start
 
+### With npm (after publish)
+
+```bash
+npx grokbot-ai-office init      # creates ~/.grokbot-ai-office/ and detects local AI CLIs
+npx grokbot-ai-office ask codex "hello"
+npx grokbot-ai-office mcp
+npx grokbot-ai-office office
+```
+
+You can also paste [docs/SETUP_PROMPT.en.md](./docs/SETUP_PROMPT.en.md) into Grok Bot and let it install for you. The npm package source is in `apps/npm`. Pushing a `v*` tag publishes it through `.github/workflows/release.yml`.
+
+### From source
+
 Requires Node.js 22 and pnpm 9.
 
 1. Install dependencies: `pnpm install`
@@ -169,7 +182,7 @@ The full plan is in [docs/ROADMAP.en.md](./docs/ROADMAP.en.md).
 3. **Live events.** Done: JSONL, a local push server, handoff, approval, PTY, and CLI hooks.
 4. **MCP server.** Done: `ai-relay mcp`. See [docs/MCP.en.md](./docs/MCP.en.md).
 5. **3D office.** Done: isometric scene, live terminals, and a look per AI. See [docs/OFFICE.en.md](./docs/OFFICE.en.md).
-6. Later: the boss view, a macOS Dynamic Island, and npm distribution. See the roadmap.
+6. Later: the boss view and a macOS Dynamic Island. npm distribution is prepared in `apps/npm` and ships once the repository is public. See the roadmap.
 
 ## Docs
 
