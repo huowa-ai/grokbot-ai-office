@@ -195,7 +195,8 @@ export function mountDesk(style: ResolvedStyle, library: ModelLibrary): DeskMoun
         return;
       }
       const copy = adoptModel(loaded.scene, gltfMaterials);
-      root.add(copy);
+      // 先在模型自己的坐标里量桌子和屏幕，再挂到 root 上。
+      // root 带着进场缩放（从接近 0 长到 1），挂上之后再量会把它算进去。
       fitWidth(copy, DESK_WIDTH);
       const screen = findNamed(copy, SCREEN_NODE);
       if (!screen) {
@@ -203,7 +204,6 @@ export function mountDesk(style: ResolvedStyle, library: ModelLibrary): DeskMoun
           '办公室桌子模型缺少 Screen，已使用程序桌子',
           deskModelId(style.hostAccent.zone),
         );
-        root.remove(copy);
         disposeOwned(gltfMaterials);
         gltfMaterials.length = 0;
         return;
@@ -211,6 +211,7 @@ export function mountDesk(style: ResolvedStyle, library: ModelLibrary): DeskMoun
       const face = measureFace(screen);
       screenSize.width = face.width;
       screenSize.height = face.height;
+      root.add(copy);
       screen.attach(procedural.screenAnchor);
       procedural.screenAnchor.position.set(0, 0, face.forward);
       procedural.screenAnchor.rotation.set(0, 0, 0);
