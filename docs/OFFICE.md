@@ -156,3 +156,11 @@ codex:
 - 令牌若出现在办公室网址的查询参数里，会被删掉。
 - 不要把密钥打进 `office-styles.json` 或 `office:`。注册表里出现疑似密钥时，整个配置会校验失败。
 - 第 5 步才会做批准按钮和老板控台。这一步的气泡只展示摘要。
+
+## 当前放入的模型（第 5 版）
+
+`apps/office/public/models/` 里现在放的是第 5 版设计稿导出的模型，来源是 `grokbot-office-redesign/out/characters/` 和 `out/kit/`。
+
+- 8 个角色：`codex`、`claude`、`gemini`、`workbuddy`、`hermes`、`openclaw`、`deepseek`、`generic`。节点有 `Body`、`Head`、`ArmL`、`ArmR`、`LegL`、`LegR`，没有动画片段，所以走节点动作。手和腿是空节点，身体是一整块 `Shell`，因此看得到的动作主要是身体和头。模型带 9 个表情形态键（`neutral`、`happy`、`surprised`、`sad`、`sleepy`、`squinted`、`calm`、`inspecting`、`confused`），办公室暂时还没用。`generic.glb` 用 `MAT_Primary` 按名字着色。
+- 2 张桌子：`desk_local`、`desk_cloud`。原稿里 `Screen` 的顶点是按整张桌子的原点烘焙的，放进来之前把它的原点挪到了屏幕中心（`0.30, 1.24, -0.15`），朝 +Z，宽 0.92、高 0.48，其他不变。
+- 椅子、台灯、地板、墙等 57 个环境模型没有放进来。办公室的场景代码只认角色和桌子两类文件，接它们要另改场景。
