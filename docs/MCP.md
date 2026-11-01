@@ -55,6 +55,10 @@ Authorization: Bearer <令牌>
 
 这里不接受查询字符串里的令牌，避免它出现在访问日志里。令牌只放环境变量，不要写进配置、聊天或命令行参数。
 
+### 固定模型的路径
+
+`/mcp/<名字>`（例如 `/mcp/codex`）只暴露 `ask`（不带 provider 参数）和 `office_status`。HTTP 模式无状态，多个客户端可同时连接。没设令牌时，带转发头（`X-Forwarded-For`、`CF-Connecting-IP`、`Forwarded`、`CF-Ray`）的请求一律 401。
+
 ## 工具
 
 `provider` 只能是注册表里的名字，例如 `codex`，或者 `provider@host`，例如 `codex@mac`。`provider@host` 里的主机必须等于当前 `RELAY_HOST`。写了 `hosts` 的提供者，只在列出的机器上可用。超时用注册表的 `timeout_ms`。`subscription` 仍然必须有 `safe_mode`。

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { createAdapter } from '@grokbot-ai-office/adapters';
 import {
   RelayError,
@@ -59,7 +61,14 @@ export async function run(
     return runOffice(promptParts, cwd, env, io);
   }
 
-  const prompt = await resolvePrompt(promptParts, io);
+  let prompt: string | undefined;
+  try {
+    prompt = await resolvePrompt(promptParts, io);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : '无法读取提示';
+    stderr(`CONFIG_INVALID ${detail}`);
+    return 1;
+  }
   if (prompt === undefined) {
     stderr(usageText());
     return 1;
@@ -147,6 +156,23 @@ async function resolvePrompt(
   promptParts: readonly string[],
   io: RunIo,
 ): Promise<string | undefined> {
+  // --file <路径>：从文件读取提示；--stdin：强制从标准输入读取。都不经过 shell 拼接。
+  const fileIndex = promptParts.indexOf('--file');
+  if (fileIndex !== -1) {
+    const file = promptParts[fileIndex + 1];
+    if (file === undefined) {
+      throw new RelayError('CONFIG_INVALID', '缺少 --file 的值');
+    }
+    const text = readFileSync(file, 'utf8').replace(/\r?\n$/, '');
+    return text.trim().length > 0 ? text : undefined;
+  }
+  if (promptParts.includes('--stdin')) {
+    if (!io.stdin) {
+      return undefined;
+    }
+    const text = (await readStream(io.stdin)).replace(/\r?\n$/, '');
+    return text.trim().length > 0 ? text : undefined;
+  }
   if (promptParts.length > 0) {
     return promptParts.join(' ');
   }

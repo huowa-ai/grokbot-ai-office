@@ -108,7 +108,49 @@ describe('mcp http auth', () => {
     const listed = await client.listTools();
     expect(listed.tools.map((tool) => tool.name)).toContain('list_agents');
   });
+
+  it('无令牌时拒绝隧道转发的请求', async () => {
+    const handle = await startMcpHttp({
+      env: cleanEnv(),
+      host: '127.0.0.1',
+      port: 0,
+      cwd: tempDir(),
+    });
+    closers.push(() => handle.close());
+    const res = await fetch(handle.url, {
+      method: 'POST',
+      headers: { 'cf-connecting-ip': '1.2.3.4', 'content-type': 'application/json' },
+      body: '{}',
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('多个客户端可同时连接，/mcp/<agent> 只暴露固定模型的工具', async () => {
+    const env = { ...cleanEnv(), RELAY_SERVER_TOKEN: 't' };
+    const handle = await startMcpHttp({ env, host: '127.0.0.1', port: 0, cwd: REPO_ROOT });
+    closers.push(() => handle.close());
+
+    const a = await connect(handle.url, 't');
+    const b = await connect(handle.url, 't');
+    expect((await a.listTools()).tools.map((t) => t.name)).toContain('list_agents');
+    expect((await b.listTools()).tools.map((t) => t.name)).toContain('ask');
+
+    const pinned = await connect(`${handle.url}/codex`, 't');
+    const tools = (await pinned.listTools()).tools;
+    expect(tools.map((t) => t.name).sort()).toEqual(['ask', 'office_status']);
+    const askTool = tools.find((t) => t.name === 'ask');
+    expect(Object.keys(askTool?.inputSchema.properties ?? {})).not.toContain('provider');
+
+    const missing = await fetch(`${handle.url}/nope`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer t', 'content-type': 'application/json' },
+      body: '{}',
+    });
+    expect(missing.status).toBe(404);
+  });
 });
+
+const REPO_ROOT = path.resolve(__dirname, '../../..');
 
 function cleanEnv(): NodeJS.ProcessEnv {
   return { PATH: process.env.PATH };

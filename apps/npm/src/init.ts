@@ -1,4 +1,14 @@
-import { constants, accessSync, copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import {
+  constants,
+  accessSync,
+  appendFileSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 
 import { loadProvidersConfig } from '@grokbot-ai-office/registry';
@@ -18,6 +28,8 @@ export const ENV_EXAMPLE = [
   'RELAY_WORKSPACE=',
   'RELAY_OFFICE_PORT=',
   'RELAY_MCP_PORT=',
+  '# MCP HTTP 的 Bearer 令牌（init 自动生成）。本机客户端用它鉴权',
+  'RELAY_SERVER_TOKEN=',
   '',
 ].join('\n');
 
@@ -74,8 +86,18 @@ export function runInit(options: InitOptions): number {
   writeFileSync(envExamplePath, ENV_EXAMPLE);
   stdout(`已写入：${envExamplePath}`);
   if (!existsSync(envPath)) {
-    writeFileSync(envPath, ENV_EXAMPLE, { mode: 0o600 });
+    const token = randomBytes(32).toString('hex');
+    writeFileSync(
+      envPath,
+      ENV_EXAMPLE.replace('RELAY_SERVER_TOKEN=', `RELAY_SERVER_TOKEN=${token}`),
+      { mode: 0o600 },
+    );
+    stdout('已生成 RELAY_SERVER_TOKEN（MCP HTTP 鉴权用，只存在 .env 里）');
     stdout(`已写入：${envPath}（在这里填 key）`);
+  } else if (!/^RELAY_SERVER_TOKEN=\S+/m.test(readFileSync(envPath, 'utf8'))) {
+    const token = randomBytes(32).toString('hex');
+    appendFileSync(envPath, `\nRELAY_SERVER_TOKEN=${token}\n`);
+    stdout(`已在 ${envPath} 追加 RELAY_SERVER_TOKEN（MCP HTTP 鉴权用）`);
   }
 
   let config: ReturnType<typeof loadProvidersConfig>;

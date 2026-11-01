@@ -131,6 +131,40 @@ providers:
     expect(code).toBe(0);
     expect(stdout).toEqual(['来自标准输入']);
   });
+
+  it('run 支持 --stdin 和 --file，提示不经过 shell', async () => {
+    const dir = writeConfig(`
+version: 1
+defaults:
+  timeout_ms: 5000
+providers:
+  echo-bot:
+    auth: subscription
+    command: ["node", "-e", "let d=''; process.stdin.setEncoding('utf8'); process.stdin.on('data', (c) => { d += c; }); process.stdin.on('end', () => process.stdout.write(d));"]
+    input: stdin
+    safe_mode: "-e"
+`);
+    const out: string[] = [];
+    const io = {
+      stdout: (t: string) => {
+        out.push(t);
+      },
+    };
+    const tricky = `引号 "a" 'b' $(rm -rf /) \`x\``;
+    expect(
+      await run(['echo-bot', '--stdin'], dir, testEnv(), {
+        ...io,
+        stdin: Readable.from([tricky]),
+        isTTY: true,
+      }),
+    ).toBe(0);
+    const file = path.join(dir, 'p.txt');
+    writeFileSync(file, `${tricky}\n`);
+    expect(await run(['echo-bot', '--file', file], dir, testEnv(), io)).toBe(0);
+    expect(out).toEqual([tricky, tricky]);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await run(['echo-bot', '--file', path.join(dir, 'nope')], dir, testEnv(), io)).toBe(1);
+  });
 });
 
 function writeConfig(yaml: string): string {
