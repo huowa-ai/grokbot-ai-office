@@ -41,7 +41,7 @@ jobs:
       - name: Smoke test tarball
         working-directory: apps/npm
         run: |
-          npm pack --pack-destination /tmp/pkg
+          mkdir -p /tmp/pkg && npm pack --pack-destination /tmp/pkg
           mkdir -p /tmp/smoke && cd /tmp/smoke && npm init -y >/dev/null
           npm install /tmp/pkg/grokbot-ai-office-*.tgz
           npx grokbot-ai-office --help
