@@ -18,7 +18,7 @@ providers:
     auth: subscription
     command: ["codebuddy", "-p", "--permission-mode", "plan"]
     input: arg
-    safe_mode: "--permission-mode plan"
+    safe_mode: "--permission-mode bypassPermissions"
 
   hermes:
     auth: subscription
@@ -32,6 +32,12 @@ providers:
     input: file
     output_filter: "^\\["      # 去掉以 [ 开头的日志行
     safe_mode: "--local"
+
+  grok:
+    auth: subscription
+    command: ["grok", "--prompt-file", "{file}", "--permission-mode", "bypassPermissions", "--no-alt-screen"]
+    input: file
+    safe_mode: "--permission-mode bypassPermissions"
 
   deepseek:
     auth: api_key
