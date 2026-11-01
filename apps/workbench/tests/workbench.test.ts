@@ -55,7 +55,10 @@ describe('session names', () => {
       ['gb-grok-b', 'idle'],
       ['gb-codex-a', 'running'],
     ]);
-    const loop = parsePaneList('gb-codebuddy-r\tbash\t1\t42\ngb-grok-x\tzsh\t1\t43', (pid) => pid === 42);
+    const loop = parsePaneList(
+      'gb-codebuddy-r\tbash\t1\t42\ngb-grok-x\tzsh\t1\t43',
+      (pid) => pid === 42,
+    );
     expect(loop.map((s) => s.status)).toEqual(['running', 'idle']);
   });
 
