@@ -19,7 +19,7 @@ export function usage(): string {
     '用法：grokbot-ai-office <命令>',
     '',
     '  init [--force]               创建 ~/.grokbot-ai-office/，复制 providers.yaml 和 .env，检测本机 AI 命令行',
-    '  ask <名字> [提示]            向一个 AI 提问（省略提示时从标准输入读取）',
+    '  ask <名字> [提示|--stdin|--file 路径]  向一个 AI 提问，只把回答打印到标准输出；失败时非零退出',
     '  mcp [--http] [--port 8788]   启动 MCP 服务',
     '  office [--port 8789] [--demo] 打开 3D 办公室',
     '  serve | handoff | approval | hook  与 ai-relay 相同',

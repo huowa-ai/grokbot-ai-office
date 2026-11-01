@@ -28,7 +28,7 @@ export const ENV_EXAMPLE = [
   'RELAY_WORKSPACE=',
   'RELAY_OFFICE_PORT=',
   'RELAY_MCP_PORT=',
-  '# MCP HTTP 的 Bearer 令牌（init 自动生成）。云端 Grok Bot 连接器用它鉴权',
+  '# MCP HTTP 的 Bearer 令牌（init 自动生成）。本机客户端用它鉴权',
   'RELAY_SERVER_TOKEN=',
   '',
 ].join('\n');
