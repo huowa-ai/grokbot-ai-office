@@ -1,0 +1,33 @@
+{
+  "name": "@grokbot-ai-office/workbench",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "本机工作台：tmux 终端墙、产出箱、AI 状态。只绑定 127.0.0.1。",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts apps/workbench/tests"
+  },
+  "dependencies": {
+    "@grokbot-ai-office/registry": "workspace:*",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "ws": "^8.18.3"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}

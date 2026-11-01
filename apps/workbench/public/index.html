@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Grokbot 工作台</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/vendor/xterm.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root { --accent:#FF5A1F; --bg:#e6e6e3; --grid:#d3d3cf; --module:#f7f6f2; --ink:#1b1b1b; --muted:#77756f; --line:#c9c8c2; --mono:'Space Mono', ui-monospace, Menlo, monospace; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); font:14px/1.5 -apple-system, "PingFang SC", system-ui, sans-serif;
+    background-color:var(--bg);
+    background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:24px 24px; }
+  header { display:flex; align-items:center; gap:16px; padding:14px 20px; border-bottom:1px solid var(--line); background:var(--module); }
+  header h1 { margin:0; font:700 15px var(--mono); letter-spacing:.08em; text-transform:uppercase; }
+  header h1 i { display:inline-block; width:10px; height:10px; background:var(--accent); margin-right:8px; border-radius:2px; }
+  #status { display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
+  .chip { font:12px var(--mono); padding:4px 10px; border:1px solid var(--line); border-radius:999px; background:#fff; display:flex; align-items:center; gap:6px; }
+  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; background:#a9a8a2; flex:none; }
+  .dot.running { background:var(--accent); box-shadow:0 0 6px var(--accent); animation:pulse 1.4s infinite; }
+  .dot.done { background:#22a559; } .dot.error { background:#e0332b; } .dot.idle { background:#a9a8a2; }
+  .dot.missing { background:transparent; border:1.5px solid #b9b8b2; opacity:.6; }
+  @keyframes pulse { 50% { opacity:.45; } }
+  #status { align-items:center; } #status .agents { display:flex; gap:12px; }
+  .legend { display:flex; gap:10px; font:11px var(--mono); color:var(--muted); padding-left:12px; border-left:1px solid var(--line); }
+  .legend span { display:flex; align-items:center; gap:4px; } .legend .dot { width:8px; height:8px; }
+  main { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:18px; padding:18px 20px; }
+  .module { background:var(--module); border:1px solid var(--line); border-radius:10px; box-shadow:0 1px 0 #fff inset, 0 2px 6px rgba(0,0,0,.05); }
+  .module > h2 { margin:0; padding:10px 14px; font:700 12px var(--mono); letter-spacing:.1em; text-transform:uppercase; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; }
+  #wall { display:grid; grid-template-columns:repeat(auto-fill, minmax(460px, 1fr)); gap:14px; padding:14px; }
+  .panel { border:1px solid var(--line); border-radius:8px; background:#fff; overflow:hidden; }
+  .panel.full { position:fixed; inset:16px; z-index:10; box-shadow:0 10px 40px rgba(0,0,0,.3); }
+  .phead { display:flex; align-items:center; gap:8px; padding:8px 10px; font:12px var(--mono); border-bottom:1px solid var(--line); }
+  .phead b { font-weight:700; } .phead .task { color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  
+  .phead .sp { flex:1; }
+  button { font:12px var(--mono); padding:3px 10px; border:1px solid var(--line); background:var(--module); border-radius:5px; cursor:pointer; }
+  button:hover { border-color:var(--ink); } button.danger:hover { border-color:var(--accent); color:var(--accent); }
+  .screen { background:#0b0b0b; height:300px; padding:6px; }
+  .panel.full .screen { height:calc(100% - 40px); }
+  .screen pre { margin:0; color:#e8e8e8; font:12px/1.35 var(--mono); white-space:pre-wrap; height:100%; overflow:auto; }
+  .empty { padding:30px; color:var(--muted); font:13px var(--mono); text-align:center; }
+  #outbox { padding:8px; max-height:calc(100vh - 140px); overflow:auto; }
+  .ob { border:1px solid var(--line); border-radius:8px; background:#fff; margin:6px; }
+  .ob summary { cursor:pointer; padding:8px 10px; font:700 12px var(--mono); list-style:none; }
+  .ob summary::before { content:'▸ '; color:var(--accent); } .ob[open] summary::before { content:'▾ '; }
+  .readme { padding:0 12px 4px; font-size:13px; } .readme h1 { font-size:16px; } .readme h2 { font-size:14px; }
+  .readme pre, #viewer pre { background:#0b0b0b; color:#e8e8e8; padding:8px; border-radius:6px; overflow:auto; font:12px var(--mono); }
+  .files { list-style:none; margin:0; padding:6px 12px 10px; font:12px var(--mono); }
+  .files a { color:var(--ink); text-decoration:none; border-bottom:1px dashed var(--muted); cursor:pointer; } .files a:hover { color:var(--accent); }
+  .files span { color:var(--muted); }
+  #viewer { position:fixed; inset:40px 15%; z-index:20; display:none; flex-direction:column; }
+  #viewer.show { display:flex; } #viewer pre { flex:1; margin:0 12px 12px; white-space:pre-wrap; }
+  code { font-family:var(--mono); font-size:12px; }
+</style>
+</head>
+<body>
+<header><h1><i></i>Grokbot 工作台</h1><span class="chip" id="mode" style="border:none;background:none"></span><div id="status"></div></header>
+<main>
+  <section class="module"><h2><span>终端墙 · tmux gb-*</span><span id="count"></span></h2><div id="wall"></div></section>
+  <section class="module"><h2><span>产出箱</span><span id="obroot" style="color:var(--muted);font-weight:400"></span></h2><div id="outbox"></div></section>
+</main>
+<div id="viewer" class="module"><h2><span id="vtitle"></span><button onclick="viewer.classList.remove('show')">关闭</button></h2><pre id="vbody"></pre></div>
+<script src="/vendor/xterm.js"></script>
+<script src="/vendor/addon-fit.js"></script>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const panels = new Map();
+let ptyOk = false;
+
+async function api(p, opt) { const r = await fetch(p, opt); if (!r.ok) throw new Error((await r.json()).error); return r.json(); }
+
+function makePanel(s) {
+  const el = document.createElement('div');
+  el.className = 'panel';
+  el.innerHTML = `<div class="phead"><b>${esc(s.agent)}</b><span class="task">${esc(s.task)}</span><span class="dot"></span><span class="sp"></span>
+    <button data-a="full">全屏</button><button data-a="kill" class="danger">关闭会话</button></div><div class="screen"></div>`;
+  const screen = $('.screen', el);
+  const p = { el, s, timer: null, term: null, ws: null, fit: null };
+  if (ptyOk && window.Terminal) {
+    const term = new Terminal({ fontFamily: "'Space Mono', Menlo, monospace", fontSize: 12, theme: { background: '#0b0b0b', cursor: '#FF5A1F' }, convertEol: false });
+    const fit = new FitAddon.FitAddon(); term.loadAddon(fit); term.open(screen); fit.fit();
+    const ws = new WebSocket(`ws://${location.host}/term/${encodeURIComponent(s.name)}`);
+    ws.onmessage = (e) => term.write(e.data);
+    ws.onopen = () => ws.send(`\u0001resize:${term.cols}x${term.rows}`);
+    ws.onclose = () => term.write('\r\n\x1b[38;2;255;90;31m[已断开]\x1b[0m');
+    term.onData((d) => ws.readyState === 1 && ws.send(d));
+    Object.assign(p, { term, ws, fit });
+  } else {
+    screen.innerHTML = '<pre></pre>';
+    const pre = $('pre', screen);
+    const tick = async () => { try { pre.textContent = (await api(`/api/sessions/${encodeURIComponent(s.name)}/capture`)).text.replace(/\x1b\[[0-9;]*m/g, ''); pre.scrollTop = pre.scrollHeight; } catch {} };
+    tick(); p.timer = setInterval(tick, 1500);
+  }
+  el.addEventListener('click', async (e) => {
+    const a = e.target.dataset?.a;
+    if (a === 'full') { el.classList.toggle('full'); e.target.textContent = el.classList.contains('full') ? '还原' : '全屏'; setTimeout(() => p.fit?.fit() || p.ws?.readyState === 1 && p.ws.send(`\u0001resize:${p.term.cols}x${p.term.rows}`), 50); }
+    if (a === 'kill' && confirm(`关闭会话 ${s.name}？里面正在跑的任务会被终止。`)) {
+      await api(`/api/sessions/${encodeURIComponent(s.name)}/kill`, { method: 'POST', headers: { 'x-workbench': '1' } }); refresh();
+    }
+  });
+  return p;
+}
+
+const LABEL = { running: '运行中', done: '完成', error: '出错', idle: '空闲', missing: '未安装' };
+function setTag(p, s) { const t = $('.dot', p.el); const st = s.state ?? s.status; t.className = `dot ${st}`; t.title = st === 'running' ? `${LABEL[st]} · ${s.command}` : LABEL[st]; }
+
+async function refreshSessions() {
+  const { sessions, pty } = await api('/api/sessions');
+  ptyOk = pty; $('#mode').textContent = pty ? '' : '只读预览（未加载 node-pty）';
+  const wall = $('#wall'); const seen = new Set();
+  for (const s of sessions) {
+    seen.add(s.name);
+    let p = panels.get(s.name);
+    if (!p) { p = makePanel(s); panels.set(s.name, p); wall.appendChild(p.el); }
+    setTag(p, s);
+  }
+  for (const [name, p] of panels) if (!seen.has(name)) { clearInterval(p.timer); p.ws?.close(); p.term?.dispose(); p.el.remove(); panels.delete(name); }
+  $('#count').textContent = `${sessions.length} 个会话`;
+  if (sessions.length === 0 && !$('.empty', wall)) wall.innerHTML = '<div class="empty">还没有 gb- 开头的 tmux 会话。<br>让 bot 运行 <code>npx grokbot-ai-office run codex --task demo --file p.txt</code></div>';
+  else if (sessions.length > 0) $('.empty', wall)?.remove();
+}
+
+async function refreshStatus() {
+  const { agents } = await api('/api/status');
+  const legend = ['running', 'done', 'error', 'idle', 'missing'].map((k) => `<span><i class="dot ${k}"></i>${LABEL[k]}</span>`).join('');
+  $('#status').innerHTML = `<div class="agents">${agents.map((a) => `<span class="dot ${a.state}" title="${esc(`${a.agent} · ${LABEL[a.state]}${a.path ? ` · ${a.path}` : ''}`)}"></span>`).join('')}</div><div class="legend">${legend}</div>`;
+}
+
+let obKey = '';
+async function refreshOutbox() {
+  const { root, entries } = await api('/api/outbox');
+  $('#obroot').textContent = root.replace(/^\/(Users|home)\/[^/]+/, '~');
+  const key = JSON.stringify(entries.map((e) => [e.folder, e.mtime, e.files.length]));
+  if (key === obKey) return; obKey = key;
+  const open = new Set([...document.querySelectorAll('.ob[open]')].map((d) => d.dataset.f));
+  $('#outbox').innerHTML = entries.length === 0 ? '<div class="empty">产出箱是空的</div>' : entries.map((e, i) => `
+    <details class="ob" data-f="${esc(e.folder)}" ${open.has(e.folder) || (open.size === 0 && i === 0) ? 'open' : ''}>
+      <summary>${esc(e.folder)}</summary>
+      <div class="readme">${e.readmeHtml ?? '<p style="color:var(--muted)">没有 README.md</p>'}</div>
+      <ul class="files">${e.files.map((f) => `<li><a data-folder="${esc(e.folder)}" data-file="${esc(f.name)}">${esc(f.name)}</a> <span>${(f.size / 1024).toFixed(1)} KB</span></li>`).join('')}</ul>
+    </details>`).join('');
+}
+
+document.addEventListener('click', async (e) => {
+  const a = e.target.closest('a[data-file]'); if (!a) return;
+  const { folder, file } = a.dataset;
+  $('#vtitle').textContent = `${folder}/${file}`;
+  $('#vbody').textContent = '读取中…'; viewer.classList.add('show');
+  try { $('#vbody').textContent = (await api(`/api/outbox/file?folder=${encodeURIComponent(folder)}&file=${encodeURIComponent(file)}`)).text; } catch (err) { $('#vbody').textContent = String(err); }
+});
+addEventListener('resize', () => panels.forEach((p) => { p.fit?.fit(); p.ws?.readyState === 1 && p.ws.send(`\u0001resize:${p.term.cols}x${p.term.rows}`); }));
+
+async function refresh() { await Promise.allSettled([refreshSessions(), refreshStatus(), refreshOutbox()]); }
+refresh(); setInterval(refresh, 3000);
+</script>
+</body>
+</html>
