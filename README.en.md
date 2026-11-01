@@ -34,7 +34,7 @@ flowchart TB
     cli[apps/relay-cli]
     mcp[apps/mcp-server]
     server[apps/event-server]
-    web[apps/office-web]
+    web[apps/office]
   end
   subgraph coreLayer [Core]
     core[packages/core]
@@ -49,12 +49,12 @@ flowchart TB
   adapters -->|implement AdapterPort| core
   registry -->|supply config| cli
   events -->|implement EventSink| core
-  web -->|read events| events
+  web -->|read /state and /events| server
   server -->|tail and push| events
   cli -->|serve| server
 ```
 
-Apps wire dependencies. `packages/core` defines `AdapterPort` and `EventSink` and does not call a CLI or HTTP API itself. `apps/office-web` only reads `packages/events`.
+Apps wire dependencies. `packages/core` defines `AdapterPort` and `EventSink` and does not call a CLI or HTTP API itself. `apps/office` only reads the event server and does not call an AI.
 
 ## Layout
 
@@ -83,6 +83,7 @@ grokbot-ai-office/
 │   ├── relay-cli/
 │   ├── event-server/
 │   ├── mcp-server/
+│   ├── office/
 │   └── office-web/
 ├── configs/providers.yaml
 ├── scripts/
@@ -126,6 +127,8 @@ ai-relay hook stop --instance claude@mac
 
 `ai-relay mcp` exposes the same relay as the MCP tools `ask`, `list_agents`, and `office_status`. `--http` binds to `127.0.0.1:8788` by default. See [docs/MCP.en.md](./docs/MCP.en.md).
 
+`pnpm office` opens the 3D office on `127.0.0.1:8789`. `pnpm office:demo` does not connect to a real AI. See [docs/OFFICE.en.md](./docs/OFFICE.en.md).
+
 A `subscription` provider may set `pty: true` to keep colors and cursor movement. If `node-pty` fails to load, the call falls back to pipes.
 
 Self-check is not part of CI. It checks that the CLI exists, that the environment variable is set, and that the HTTP endpoint is reachable. It does not send the API key or the prompt.
@@ -165,7 +168,8 @@ The full plan is in [docs/ROADMAP.en.md](./docs/ROADMAP.en.md).
 2. **Relay core and adapters.** Done, including DeepSeek, Kimi, GLM, Claude, Gemini, and OpenAI-compatible endpoints.
 3. **Live events.** Done: JSONL, a local push server, handoff, approval, PTY, and CLI hooks.
 4. **MCP server.** Done: `ai-relay mcp`. See [docs/MCP.en.md](./docs/MCP.en.md).
-5. Later: the 3D office, the boss view, a macOS Dynamic Island, and npm distribution. See the roadmap.
+5. **3D office.** Done: isometric scene, live terminals, and a look per AI. See [docs/OFFICE.en.md](./docs/OFFICE.en.md).
+6. Later: the boss view, a macOS Dynamic Island, and npm distribution. See the roadmap.
 
 ## Docs
 
@@ -174,5 +178,6 @@ The full plan is in [docs/ROADMAP.en.md](./docs/ROADMAP.en.md).
 - Roadmap: [docs/ROADMAP.en.md](./docs/ROADMAP.en.md)
 - CLI hooks: [docs/HOOKS.en.md](./docs/HOOKS.en.md)
 - MCP server: [docs/MCP.en.md](./docs/MCP.en.md)
+- 3D office: [docs/OFFICE.en.md](./docs/OFFICE.en.md)
 - Engineering conventions: [docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)

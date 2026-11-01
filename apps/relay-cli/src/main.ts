@@ -17,6 +17,7 @@ import {
 } from '@grokbot-ai-office/registry';
 
 import { runApproval, runHandoff, runHook, runMcp, runServe, usageText } from './commands.js';
+import { runOffice } from './office.js';
 
 export interface RunIo {
   stdin?: NodeJS.ReadableStream;
@@ -53,6 +54,9 @@ export async function run(
   }
   if (rawName === 'mcp') {
     return runMcp(promptParts, cwd, env, io);
+  }
+  if (rawName === 'office') {
+    return runOffice(promptParts, cwd, env, io);
   }
 
   const prompt = await resolvePrompt(promptParts, io);

@@ -1,6 +1,6 @@
 # Roadmap
 
-This is the agreed plan. The project currently implements step 3.5. Nothing from step 4 onward is built yet.
+This is the agreed plan. The project currently implements step 4. Nothing from step 5 onward is built yet.
 
 ## Step 1. Skeleton (done)
 
@@ -29,9 +29,9 @@ Handoff and approval are in this step too: `ai-relay handoff` and `ai-relay appr
 
 `ai-relay mcp` exposes the relay as an MCP server. The tools are `ask`, `list_agents`, `office_status`, plus handoff and approval. Transports are stdio and Streamable HTTP bound to loopback by default. A Grok Bot relay bot calls this MCP server instead of assembling shell commands. See [MCP.en.md](./MCP.en.md).
 
-## Step 4. First 3D office
+## Step 4. First 3D office (done)
 
-A real three.js scene: low-poly, cartoon-like, orthographic isometric by default. The local zone and the cloud zone share one floor. Each monitor embeds a live xterm.js terminal through CSS3DRenderer. Status has motion: stuck turns red, waiting for approval raises a hand, a long idle sleeps, and a newly connected AI gets its desk fitted out. A handoff walks a file across the room.
+A real three.js scene: low-poly, cartoon-like, orthographic isometric by default. The local zone and the cloud zone share one floor. Each monitor embeds a live xterm.js terminal through CSS3DRenderer. Status has motion: stuck turns red, waiting for approval raises a hand, a long idle sleeps, and a newly connected AI gets its desk fitted out. A handoff walks a file across the room. Each provider has its own character and desk. See [OFFICE.en.md](./OFFICE.en.md). The boss view is not built.
 
 ## Step 5. Boss view
 

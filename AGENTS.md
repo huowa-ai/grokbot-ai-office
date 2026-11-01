@@ -18,10 +18,11 @@ grokbot-ai-office 是一个多 AI 协作办公室：任何 AI 都能以同一种
 - 真实调用自检：`pnpm selfcheck <名字>`（不在 CI 中运行）
 - 事件服务：`pnpm serve`（即 `ai-relay serve`，默认 `127.0.0.1:8787`）
 - MCP 服务器：`ai-relay mcp`（stdio），或 `ai-relay mcp --http`（默认 `127.0.0.1:8788`）。说明见 `docs/MCP.md`
+- 3D 办公室：`pnpm office`（默认 `127.0.0.1:8789`），演示用 `pnpm office:demo`。说明见 `docs/OFFICE.md`
 
 ## 必须遵守
 
-- 依赖方向：`apps → core`；适配器实现 `core` 的 `AdapterPort`；适配器之间不互相导入；`office-web` 只读事件。
+- 依赖方向：`apps → core`；适配器实现 `core` 的 `AdapterPort`；适配器之间不互相导入；`office` 只读事件服务，不调用 AI。
 - 接入新 AI 优先只改 `configs/providers.yaml`，三种 `auth`：`subscription`、`api_key`、`openai_compatible`。
 - 每个 `subscription` 提供者必须有只读或安全模式参数。
 - 同一台机器上，适配器的工作目录是 `RELAY_WORKSPACE`（默认 `~/.grokbot-ai-office/workspace`）。不要把密钥放进该目录。

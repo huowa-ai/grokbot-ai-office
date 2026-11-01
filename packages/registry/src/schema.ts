@@ -12,6 +12,69 @@ export const hostNameSchema = z.string().regex(namePattern, '主机名必须是�
 
 const hostsSchema = z.array(hostNameSchema).optional();
 
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, '颜色必须是 #RRGGBB');
+
+export const OFFICE_BODIES = [
+  'robot',
+  'round',
+  'twin',
+  'headset',
+  'messenger',
+  'lobster',
+  'whale',
+  'blob',
+] as const;
+
+export const OFFICE_ACCESSORIES = [
+  'antenna',
+  'scarf',
+  'sparkles',
+  'headset',
+  'wings',
+  'claws',
+  'spout',
+  'none',
+] as const;
+
+export const OFFICE_DESK_PROPS = [
+  'keyboard',
+  'books',
+  'stars',
+  'plant',
+  'satchel',
+  'shell',
+  'wave',
+  'mug',
+] as const;
+
+export const OFFICE_IDLE_POSES = ['sleep', 'sway', 'hover', 'perch', 'bob'] as const;
+
+export const OFFICE_TYPING = ['keys', 'nod', 'flip', 'clack', 'wings', 'claws', 'tail'] as const;
+
+export const officeAppearanceSchema = z
+  .object({
+    body: z.enum(OFFICE_BODIES).optional(),
+    palette: z
+      .object({
+        primary: hexColor.optional(),
+        secondary: hexColor.optional(),
+        accent: hexColor.optional(),
+      })
+      .strict()
+      .optional(),
+    accessory: z.enum(OFFICE_ACCESSORIES).optional(),
+    desk_prop: z.enum(OFFICE_DESK_PROPS).optional(),
+    bezel: hexColor.optional(),
+    name_tag: hexColor.optional(),
+    idle_pose: z.enum(OFFICE_IDLE_POSES).optional(),
+    typing: z.enum(OFFICE_TYPING).optional(),
+  })
+  .strict();
+
+export type OfficeAppearance = z.infer<typeof officeAppearanceSchema>;
+
+const officeField = { office: officeAppearanceSchema.optional() };
+
 const keyEnvSchema = z.string().superRefine((value, ctx) => {
   if (/sk-/i.test(value)) {
     ctx.addIssue({
@@ -37,6 +100,7 @@ const subscriptionProviderSchema = z
     output_filter: z.string().optional(),
     pty: z.boolean().optional(),
     hosts: hostsSchema,
+    ...officeField,
   })
   .strict();
 
@@ -47,6 +111,7 @@ const apiKeyProviderSchema = z
     model: z.string().min(1).optional(),
     key_env: keyEnvSchema,
     hosts: hostsSchema,
+    ...officeField,
   })
   .strict();
 
@@ -57,6 +122,7 @@ const openaiCompatibleProviderSchema = z
     model: z.string().min(1),
     key_env: keyEnvSchema.nullable().optional(),
     hosts: hostsSchema,
+    ...officeField,
   })
   .strict();
 
@@ -83,6 +149,16 @@ export const providersFileSchema = z
 
 export type ProvidersFile = z.infer<typeof providersFileSchema>;
 export type ProviderConfig = ProvidersFile['providers'][string];
+
+export function extractOfficeAppearances(file: ProvidersFile): Record<string, OfficeAppearance> {
+  const styles: Record<string, OfficeAppearance> = {};
+  for (const [name, provider] of Object.entries(file.providers)) {
+    if (provider.office) {
+      styles[name] = provider.office;
+    }
+  }
+  return styles;
+}
 
 function rejectSecretStrings(
   value: unknown,
